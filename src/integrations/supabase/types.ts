@@ -249,50 +249,6 @@ export type Database = {
           },
         ]
       }
-      transactions: {
-        Row: {
-          contract_id: string | null
-          created_at: string
-          description: string
-          due_date: string
-          id: string
-          status: Database["public"]["Enums"]["transaction_status"]
-          type: Database["public"]["Enums"]["transaction_type"]
-          updated_at: string
-          value: number
-        }
-        Insert: {
-          contract_id?: string | null
-          created_at?: string
-          description: string
-          due_date: string
-          id?: string
-          status?: Database["public"]["Enums"]["transaction_status"]
-          type: Database["public"]["Enums"]["transaction_type"]
-          updated_at?: string
-          value: number
-        }
-        Update: {
-          contract_id?: string | null
-          created_at?: string
-          description?: string
-          due_date?: string
-          id?: string
-          status?: Database["public"]["Enums"]["transaction_status"]
-          type?: Database["public"]["Enums"]["transaction_type"]
-          updated_at?: string
-          value?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "transactions_contract_id_fkey"
-            columns: ["contract_id"]
-            isOneToOne: false
-            referencedRelation: "contracts"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
     }
     Views: {
       financial_overview: {
