@@ -185,43 +185,23 @@ export function ClientDetailDialog({
               )}
             />
 
-            <div className="grid grid-cols-2 gap-4">
-              {/* Nacionalidade */}
-              <FormField
-                control={form.control}
-                name="nationality"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Nacionalidade</FormLabel>
-                    <FormControl>
-                      <div className="relative">
-                        <MapPin className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                        <Input className="pl-9" placeholder="Ex: Brasil" {...field} />
-                      </div>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {/* Escola/Time */}
-              <FormField
-                control={form.control}
-                name="school"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Escola / Clube</FormLabel>
-                    <FormControl>
-                      <div className="relative">
-                        <School className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                        <Input className="pl-9" placeholder="Ex: Base do Flamengo" {...field} />
-                      </div>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+            {/* Nacionalidade */}
+            <FormField
+              control={form.control}
+              name="nationality"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Nacionalidade</FormLabel>
+                  <FormControl>
+                    <div className="relative">
+                      <MapPin className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                      <Input className="pl-9" placeholder="Ex: Brasil" {...field} />
+                    </div>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             <div className="grid grid-cols-2 gap-4">
               {/* Email */}
