@@ -37,18 +37,18 @@ export function useKPIData() {
         c.stage === 'fechado'
       ).length || 0;
 
-      // Get transactions for this month
-      const { data: transactions, error: txError } = await supabase
-        .from('transactions')
-        .select('type, value')
-        .gte('due_date', firstDayOfMonth.toISOString().split('T')[0])
-        .lte('due_date', lastDayOfMonth.toISOString().split('T')[0]);
+      // Get financial overview for this month (uses financial_overview view)
+      const { data: financialData, error: financialError } = await supabase
+        .from('financial_overview')
+        .select('direction, amount')
+        .gte('date', firstDayOfMonth.toISOString().split('T')[0])
+        .lte('date', lastDayOfMonth.toISOString().split('T')[0]);
 
-      if (txError) throw txError;
+      if (financialError) throw financialError;
 
-      const monthlyRevenue = transactions
-        ?.filter(t => t.type === 'income')
-        .reduce((sum, t) => sum + Number(t.value), 0) || 0;
+      const monthlyRevenue = financialData
+        ?.filter(t => t.direction === 'income')
+        .reduce((sum, t) => sum + Number(t.amount || 0), 0) || 0;
 
       // Get expenses for burn rate
       const { data: expenses, error: expError } = await supabase

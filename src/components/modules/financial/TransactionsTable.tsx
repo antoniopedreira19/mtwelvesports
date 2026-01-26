@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { ChevronLeft, ChevronRight, ArrowUpRight, ArrowDownRight, Loader2 } from 'lucide-react';
-import { useTransactions, TransactionRow } from '@/hooks/useTransactions';
+import { useTransactions, FinancialOverviewRow } from '@/hooks/useTransactions';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import {
@@ -25,18 +25,19 @@ export function TransactionsTable() {
   const filteredTransactions = useMemo(() => {
     if (!transactions) return [];
     return transactions.filter((t) => {
-      const date = new Date(t.due_date);
+      if (!t.date) return false;
+      const date = new Date(t.date);
       return date.getMonth() === selectedMonth && date.getFullYear() === selectedYear;
     });
   }, [transactions, selectedMonth, selectedYear]);
 
   const totals = useMemo(() => {
     const income = filteredTransactions
-      .filter((t) => t.type === 'income')
-      .reduce((sum, t) => sum + Number(t.value), 0);
+      .filter((t) => t.direction === 'income')
+      .reduce((sum, t) => sum + Number(t.amount || 0), 0);
     const expense = filteredTransactions
-      .filter((t) => t.type === 'expense')
-      .reduce((sum, t) => sum + Number(t.value), 0);
+      .filter((t) => t.direction === 'expense')
+      .reduce((sum, t) => sum + Number(t.amount || 0), 0);
     return { income, expense, balance: income - expense };
   }, [filteredTransactions]);
 
@@ -47,7 +48,8 @@ export function TransactionsTable() {
     }).format(value);
   };
 
-  const formatDate = (date: string) => {
+  const formatDate = (date: string | null) => {
+    if (!date) return '-';
     return new Intl.DateTimeFormat('pt-BR').format(new Date(date));
   };
 
@@ -69,13 +71,13 @@ export function TransactionsTable() {
     }
   };
 
-  const getStatusLabel = (status: TransactionRow['status']) => {
+  const getStatusLabel = (status: FinancialOverviewRow['status']) => {
     switch (status) {
       case 'paid': return 'Pago';
       case 'pending': return 'Pendente';
       case 'overdue': return 'Atrasado';
       case 'cancelled': return 'Cancelado';
-      default: return status;
+      default: return status || '-';
     }
   };
 
@@ -153,24 +155,24 @@ export function TransactionsTable() {
                   <TableCell>
                     <div className={cn(
                       'w-8 h-8 rounded-lg flex items-center justify-center',
-                      transaction.type === 'income' 
+                      transaction.direction === 'income' 
                         ? 'bg-success/10 text-success' 
                         : 'bg-destructive/10 text-destructive'
                     )}>
-                      {transaction.type === 'income' 
+                      {transaction.direction === 'income' 
                         ? <ArrowUpRight className="w-4 h-4" />
                         : <ArrowDownRight className="w-4 h-4" />}
                     </div>
                   </TableCell>
-                  <TableCell className="font-medium">{transaction.description}</TableCell>
+                  <TableCell className="font-medium">{transaction.title || '-'}</TableCell>
                   <TableCell className="text-muted-foreground">
-                    {formatDate(transaction.due_date)}
+                    {formatDate(transaction.date)}
                   </TableCell>
                   <TableCell className={cn(
                     'text-right font-semibold',
-                    transaction.type === 'income' ? 'text-success' : 'text-destructive'
+                    transaction.direction === 'income' ? 'text-success' : 'text-destructive'
                   )}>
-                    {transaction.type === 'income' ? '+' : '-'}{formatCurrency(Number(transaction.value))}
+                    {transaction.direction === 'income' ? '+' : '-'}{formatCurrency(Number(transaction.amount || 0))}
                   </TableCell>
                   <TableCell>
                     <span className={cn(
