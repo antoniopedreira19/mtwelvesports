@@ -177,8 +177,7 @@ export default function Financeiro() {
             {isCompleted ? "Concluído" : "Ativo"}
           </span>
         </div>
-        <h3 className="font-semibold mb-1 text-lg">{contract.clients?.name || "Cliente"}</h3>
-        <p className="text-sm text-muted-foreground mb-4">{contract.clients?.school || "Sem clube definido"}</p>
+        <h3 className="font-semibold mb-4 text-lg">{contract.clients?.name || "Cliente"}</h3>
 
         <div className="space-y-2">
           <div className="flex items-center justify-between text-sm">

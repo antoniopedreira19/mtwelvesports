@@ -117,9 +117,11 @@ export function ClientSelectorDialog({
                       <p className="font-medium truncate group-hover:text-primary transition-colors">
                         {client.name}
                       </p>
-                      <p className="text-sm text-muted-foreground truncate">
-                        {client.school || "Sem clube definido"}
-                      </p>
+                      {client.nationality && (
+                        <p className="text-sm text-muted-foreground truncate">
+                          {client.nationality}
+                        </p>
+                      )}
                     </div>
                     <span className="text-xs px-2 py-1 rounded-full bg-muted text-muted-foreground capitalize shrink-0">
                       {client.stage}

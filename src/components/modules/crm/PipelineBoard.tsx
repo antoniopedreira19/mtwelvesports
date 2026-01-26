@@ -2,7 +2,7 @@ import { useState } from "react";
 import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
 import { PipelineColumn, Client, PipelineStage } from "@/types";
 import { cn } from "@/lib/utils";
-import { User, Phone, Mail, MoreHorizontal, MapPin, School } from "lucide-react";
+import { User, Phone, Mail, MoreHorizontal, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -211,12 +211,6 @@ export function PipelineBoard({ onClientMoveToFechado, searchTerm = "", national
                                 </DropdownMenu>
                               </div>
 
-                              {client.school && (
-                                <div className="flex items-center gap-1.5 text-xs text-primary mb-2">
-                                  <School className="w-3 h-3" />
-                                  <span className="truncate">{client.school}</span>
-                                </div>
-                              )}
 
                               <div className="flex items-center gap-3 text-xs text-muted-foreground mt-2">
                                 {client.phone && (

@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Loader2, User, Mail, Phone, MapPin, School, FileText, Trash2 } from "lucide-react";
+import { Loader2, User, Mail, Phone, MapPin, FileText, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -48,7 +48,6 @@ const formSchema = z.object({
   email: z.string().email("E-mail inválido").optional().or(z.literal("")),
   phone: z.string().optional(),
   nationality: z.string().optional(),
-  school: z.string().optional(),
   stage: z.enum(["radar", "contato", "negociacao", "fechado", "perdido"]),
   notes: z.string().optional(),
 });
@@ -78,7 +77,6 @@ export function ClientDetailDialog({
       email: "",
       phone: "",
       nationality: "",
-      school: "",
       stage: "radar",
       notes: "",
     },
@@ -92,7 +90,6 @@ export function ClientDetailDialog({
         email: client.email || "",
         phone: client.phone || "",
         nationality: client.nationality || "",
-        school: client.school || "",
         stage: client.stage,
         notes: client.notes || "",
       });
@@ -109,7 +106,6 @@ export function ClientDetailDialog({
         email: values.email || null,
         phone: values.phone || null,
         nationality: values.nationality || null,
-        school: values.school || null,
         stage: values.stage,
         notes: values.notes || null,
       });

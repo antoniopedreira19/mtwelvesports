@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Loader2, Plus, User, Mail, Phone, MapPin, School } from "lucide-react";
+import { Loader2, Plus, User, Mail, Phone, MapPin } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import {
@@ -40,7 +40,6 @@ const formSchema = z.object({
   email: z.string().email("E-mail inválido").optional().or(z.literal("")),
   phone: z.string().optional(),
   nationality: z.string().optional(),
-  school: z.string().optional(),
   stage: z.enum(["radar", "contato", "negociacao", "fechado", "perdido"]),
 });
 
@@ -59,7 +58,6 @@ export function NewClientForm({ onSuccess }: NewClientDialogProps) {
       email: "",
       phone: "",
       nationality: "",
-      school: "",
       stage: "radar",
     },
   });
@@ -72,7 +70,6 @@ export function NewClientForm({ onSuccess }: NewClientDialogProps) {
         email: values.email || null,
         phone: values.phone || null,
         nationality: values.nationality || null,
-        school: values.school || null,
         stage: values.stage,
       };
 
@@ -116,43 +113,23 @@ export function NewClientForm({ onSuccess }: NewClientDialogProps) {
           )}
         />
 
-        <div className="grid grid-cols-2 gap-4">
-          {/* Nacionalidade */}
-          <FormField
-            control={form.control}
-            name="nationality"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Nacionalidade</FormLabel>
-                <FormControl>
-                  <div className="relative">
-                    <MapPin className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input className="pl-9" placeholder="Ex: Brasil" {...field} />
-                  </div>
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          {/* Escola/Time */}
-          <FormField
-            control={form.control}
-            name="school"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Escola / Clube</FormLabel>
-                <FormControl>
-                  <div className="relative">
-                    <School className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input className="pl-9" placeholder="Ex: Base do Flamengo" {...field} />
-                  </div>
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
+        {/* Nacionalidade */}
+        <FormField
+          control={form.control}
+          name="nationality"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Nacionalidade</FormLabel>
+              <FormControl>
+                <div className="relative">
+                  <MapPin className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input className="pl-9" placeholder="Ex: Brasil" {...field} />
+                </div>
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
         <div className="grid grid-cols-2 gap-4">
           {/* Email */}
