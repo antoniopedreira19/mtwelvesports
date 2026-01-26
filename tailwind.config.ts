@@ -77,6 +77,12 @@ export default {
           DEFAULT: "hsl(var(--surface))",
           elevated: "hsl(var(--surface-elevated))",
         },
+        table: {
+          header: "hsl(var(--table-header))",
+          row: "hsl(var(--table-row))",
+          "row-alt": "hsl(var(--table-row-alt))",
+          "row-result": "hsl(var(--table-row-result))",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",
