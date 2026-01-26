@@ -51,16 +51,24 @@ export function ExpensesTable() {
 
   async function handleDelete() {
     if (!deletingId) return;
+
+    // Guarda estado anterior para rollback
+    const previousExpenses = [...expenses];
+    const expenseToDelete = expenses.find((e) => e.id === deletingId);
+
+    // Optimistic update - remove imediatamente
+    setExpenses((prev) => prev.filter((e) => e.id !== deletingId));
+    setDeletingId(null);
+
     try {
-      const { error } = await supabase.from("expenses").delete().eq("id", deletingId);
+      const { error } = await supabase.from("expenses").delete().eq("id", expenseToDelete?.id);
       if (error) throw error;
 
       toast.success("Despesa removida.");
-      fetchExpenses();
     } catch (error) {
+      // Rollback em caso de erro
+      setExpenses(previousExpenses);
       toast.error("Erro ao remover despesa.");
-    } finally {
-      setDeletingId(null);
     }
   }
 
@@ -233,8 +241,17 @@ export function ExpensesTable() {
         openProp={isEditModalOpen}
         onOpenChangeProp={setIsEditModalOpen}
         expenseToEdit={editingExpense}
-        onSuccess={() => {
-          fetchExpenses();
+        onSuccess={(updatedExpense?: any) => {
+          if (updatedExpense && editingExpense) {
+            // Optimistic update para edição
+            setExpenses((prev) =>
+              prev.map((e) => (e.id === editingExpense.id ? { ...e, ...updatedExpense } : e))
+            );
+          } else {
+            // Refetch para novas despesas
+            fetchExpenses();
+          }
+          setEditingExpense(null);
         }}
       />
     </div>
