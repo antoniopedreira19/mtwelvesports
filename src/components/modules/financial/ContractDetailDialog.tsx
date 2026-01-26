@@ -26,6 +26,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { checkAndCompleteContract } from "@/services/contractService";
+import { useEmployees } from "@/hooks/useEmployees";
 
 interface ContractDetailDialogProps {
   contractId: string | null;
@@ -39,6 +40,9 @@ export function ContractDetailDialog({ contractId, open, onOpenChange, onContrac
   const [installments, setInstallments] = useState<any[]>([]);
   const [commissions, setCommissions] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Busca funcionários para o select de beneficiário
+  const { data: employees = [] } = useEmployees();
 
   // Estados de Edição
   const [editingInstallmentId, setEditingInstallmentId] = useState<string | null>(null);
@@ -514,13 +518,23 @@ export function ContractDetailDialog({ contractId, open, onOpenChange, onContrac
                             <TableRow key={comm.id} className="hover:bg-muted/5">
                               <TableCell>
                                 {isEditing ? (
-                                  <Input
+                                  <Select
                                     value={editCommissionForm.employee_name}
-                                    onChange={(e) =>
-                                      setEditCommissionForm({ ...editCommissionForm, employee_name: e.target.value })
+                                    onValueChange={(val) =>
+                                      setEditCommissionForm({ ...editCommissionForm, employee_name: val })
                                     }
-                                    className={`h-8 ${noSpinnerClass}`}
-                                  />
+                                  >
+                                    <SelectTrigger className="h-8 w-full">
+                                      <SelectValue placeholder="Selecione..." />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {employees.map((emp) => (
+                                        <SelectItem key={emp.id} value={emp.name}>
+                                          {emp.name}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
                                 ) : (
                                   <div className="font-medium ml-4">{comm.employee_name}</div>
                                 )}
