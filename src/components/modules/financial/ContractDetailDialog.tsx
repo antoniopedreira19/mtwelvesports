@@ -15,6 +15,7 @@ import {
   CalendarIcon,
   CheckCircle2,
   CalendarDays,
+  Settings2,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -27,6 +28,7 @@ import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { checkAndCompleteContract } from "@/services/contractService";
 import { useEmployees } from "@/hooks/useEmployees";
+import { EditContractDialog } from "./EditContractDialog";
 
 interface ContractDetailDialogProps {
   contractId: string | null;
@@ -40,6 +42,7 @@ export function ContractDetailDialog({ contractId, open, onOpenChange, onContrac
   const [installments, setInstallments] = useState<any[]>([]);
   const [commissions, setCommissions] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
   // Busca funcionários para o select de beneficiário
   const { data: employees = [] } = useEmployees();
@@ -338,6 +341,7 @@ export function ContractDetailDialog({ contractId, open, onOpenChange, onContrac
   if (!contract) return null;
 
   return (
+    <>
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl bg-card border-border max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
@@ -346,9 +350,29 @@ export function ContractDetailDialog({ contractId, open, onOpenChange, onContrac
               <FileText className="h-5 w-5 text-[#E8BD27]" />
               Detalhes do Contrato
             </DialogTitle>
-            <Badge variant="outline" className="mr-6 border-[#E8BD27] text-[#E8BD27]">
-              {contract.status === "active" ? "Ativo" : "Concluído"}
-            </Badge>
+            <div className="flex items-center gap-2 mr-6">
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="gap-2"
+                      onClick={() => setIsEditDialogOpen(true)}
+                    >
+                      <Settings2 className="h-4 w-4" />
+                      Editar Contrato
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Alterar valor, parcelas e comissões</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+              <Badge variant="outline" className="border-[#E8BD27] text-[#E8BD27]">
+                {contract.status === "active" ? "Ativo" : "Concluído"}
+              </Badge>
+            </div>
           </div>
         </DialogHeader>
 
@@ -739,5 +763,16 @@ export function ContractDetailDialog({ contractId, open, onOpenChange, onContrac
         </Tabs>
       </DialogContent>
     </Dialog>
+
+    <EditContractDialog
+      contractId={contractId}
+      open={isEditDialogOpen}
+      onOpenChange={setIsEditDialogOpen}
+      onContractUpdated={() => {
+        fetchContractDetails();
+        if (onContractUpdated) onContractUpdated();
+      }}
+    />
+    </>
   );
 }
