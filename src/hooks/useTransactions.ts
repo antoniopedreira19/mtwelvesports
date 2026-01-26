@@ -2,19 +2,19 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Tables } from '@/integrations/supabase/types';
 
-export type TransactionRow = Tables<'transactions'>;
+export type FinancialOverviewRow = Tables<'financial_overview'>;
 
 export function useTransactions() {
   return useQuery({
-    queryKey: ['transactions'],
+    queryKey: ['financial-overview'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('transactions')
+        .from('financial_overview')
         .select('*')
-        .order('due_date', { ascending: false });
+        .order('date', { ascending: false });
       
       if (error) throw error;
-      return data as TransactionRow[];
+      return data as FinancialOverviewRow[];
     },
   });
 }
