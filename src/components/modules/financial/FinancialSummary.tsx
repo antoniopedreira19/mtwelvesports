@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
-import { format, startOfMonth, subMonths } from "date-fns";
+import { format, startOfMonth, subMonths, isAfter, isBefore, isSameMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
   Loader2,
@@ -12,15 +12,13 @@ import {
   Clock,
   AlertCircle,
   Minus,
-  Filter,
-  Search, // <--- ADICIONADO AQUI
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
+import { MonthRangeFilter } from "./MonthRangeFilter";
 
 // --- TIPOS ---
 interface FinancialRecord {
@@ -55,8 +53,15 @@ export function FinancialSummary() {
   const [records, setRecords] = useState<FinancialRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Controle de estado
-  const [selectedYear, setSelectedYear] = useState<string>(new Date().getFullYear().toString());
+  // Controle de estado - Intervalo de meses
+  const [startMonth, setStartMonth] = useState<Date>(() => {
+    const now = new Date();
+    return new Date(now.getFullYear(), 0, 1); // Janeiro do ano atual
+  });
+  const [endMonth, setEndMonth] = useState<Date>(() => {
+    return startOfMonth(new Date()); // Mês atual
+  });
+  
   const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({
     receitas: false,
     despesas: false,
@@ -71,6 +76,10 @@ export function FinancialSummary() {
     records: FinancialRecord[];
   } | null>(null);
 
+  // Datas mínimas e máximas baseadas nos dados
+  const [minDate, setMinDate] = useState<Date | undefined>();
+  const [maxDate, setMaxDate] = useState<Date | undefined>();
+
   useEffect(() => {
     fetchFinancialData();
   }, []);
@@ -83,12 +92,11 @@ export function FinancialSummary() {
       setRecords(data as FinancialRecord[]);
 
       if (data && data.length > 0) {
-        const years = Array.from(new Set(data.map((d: any) => d.date.substring(0, 4))))
-          .sort()
-          .reverse();
-        if (!years.includes(new Date().getFullYear().toString()) && years.length > 0) {
-          setSelectedYear(years[0]);
-        }
+        // Define min/max dates based on data
+        const dates = data.map((d: any) => new Date(d.date.includes("T") ? d.date : `${d.date}T12:00:00`));
+        const sortedDates = dates.sort((a, b) => a.getTime() - b.getTime());
+        setMinDate(startOfMonth(sortedDates[0]));
+        setMaxDate(startOfMonth(sortedDates[sortedDates.length - 1]));
       }
     } catch (error) {
       console.error("Erro ao buscar financeiro:", error);
@@ -97,8 +105,20 @@ export function FinancialSummary() {
     }
   }
 
+  const handleRangeChange = (start: Date, end: Date) => {
+    setStartMonth(start);
+    setEndMonth(end);
+  };
+
+  // Gerar label do período
+  const getPeriodLabel = () => {
+    const startLabel = format(startMonth, "MMM/yy", { locale: ptBR });
+    const endLabel = format(endMonth, "MMM/yy", { locale: ptBR });
+    return `${startLabel.charAt(0).toUpperCase() + startLabel.slice(1)} - ${endLabel.charAt(0).toUpperCase() + endLabel.slice(1)}`;
+  };
+
   // --- PROCESSAMENTO DA MATRIZ ---
-  const { matrix, availableYears, displayMonths, totals } = useMemo(() => {
+  const { matrix, displayMonths, totals } = useMemo(() => {
     const matrix: MatrixData = {
       receitas: { totalByMonth: {}, items: {} },
       despesas: { totalByMonth: {}, items: {} },
@@ -106,17 +126,19 @@ export function FinancialSummary() {
     };
 
     const uniqueMonths = new Set<string>();
-    const uniqueYears = new Set<string>();
     const grandTotals: Record<string, number> = {};
 
     records.forEach((record) => {
       const dateStr = record.date.includes("T") ? record.date : `${record.date}T12:00:00`;
       const dateObj = new Date(dateStr);
+      const recordMonth = startOfMonth(dateObj);
 
-      const year = format(dateObj, "yyyy");
-      uniqueYears.add(year);
+      // Filtra pelo intervalo de meses selecionado
+      if (isBefore(recordMonth, startMonth) || isAfter(recordMonth, endMonth)) {
+        return;
+      }
 
-      const monthKey = format(startOfMonth(dateObj), "yyyy-MM");
+      const monthKey = format(recordMonth, "yyyy-MM");
       uniqueMonths.add(monthKey);
 
       let categoryKey = "despesas";
@@ -135,7 +157,7 @@ export function FinancialSummary() {
       const val = Number(record.amount);
       catGroup.totalByMonth[monthKey] += val;
       catGroup.items[title][monthKey].amount += val;
-      catGroup.items[title][monthKey].records.push(record); // Guarda o registro bruto
+      catGroup.items[title][monthKey].records.push(record);
 
       if (record.status) {
         catGroup.items[title][monthKey].status.push(record.status);
@@ -146,12 +168,10 @@ export function FinancialSummary() {
       else grandTotals[monthKey] -= val;
     });
 
-    const allMonths = Array.from(uniqueMonths).sort();
-    const sortedYears = Array.from(uniqueYears).sort().reverse();
-    const displayMonths = allMonths.filter((m) => m.startsWith(selectedYear));
+    const displayMonths = Array.from(uniqueMonths).sort();
 
-    return { matrix, availableYears: sortedYears, displayMonths, totals: grandTotals };
-  }, [records, selectedYear]);
+    return { matrix, displayMonths, totals: grandTotals };
+  }, [records, startMonth, endMonth]);
 
   const toggleRow = (key: string) => {
     setExpandedRows((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -269,10 +289,10 @@ export function FinancialSummary() {
       </Card>
     );
 
-  const yearTotalReceitas = displayMonths.reduce((sum, m) => sum + (matrix.receitas.totalByMonth[m] || 0), 0);
-  const yearTotalDespesas = displayMonths.reduce((sum, m) => sum + (matrix.despesas.totalByMonth[m] || 0), 0);
-  const yearTotalComissoes = displayMonths.reduce((sum, m) => sum + (matrix.comissoes.totalByMonth[m] || 0), 0);
-  const yearTotalLucro = yearTotalReceitas - (yearTotalDespesas + yearTotalComissoes);
+  const periodTotalReceitas = displayMonths.reduce((sum, m) => sum + (matrix.receitas.totalByMonth[m] || 0), 0);
+  const periodTotalDespesas = displayMonths.reduce((sum, m) => sum + (matrix.despesas.totalByMonth[m] || 0), 0);
+  const periodTotalComissoes = displayMonths.reduce((sum, m) => sum + (matrix.comissoes.totalByMonth[m] || 0), 0);
+  const periodTotalLucro = periodTotalReceitas - (periodTotalDespesas + periodTotalComissoes);
 
   return (
     <div className="space-y-6">
@@ -283,8 +303,8 @@ export function FinancialSummary() {
           <Card className="bg-card border-border/50 shadow-sm">
             <CardContent className="p-4 flex items-center justify-between">
               <div>
-                <p className="text-xs text-muted-foreground uppercase font-bold">Receita ({selectedYear})</p>
-                <p className="text-lg font-bold text-emerald-500">{formatCurrency(yearTotalReceitas)}</p>
+                <p className="text-xs text-muted-foreground uppercase font-bold">Receita</p>
+                <p className="text-lg font-bold text-emerald-500">{formatCurrency(periodTotalReceitas)}</p>
               </div>
               <TrendingUp className="h-4 w-4 text-emerald-500 opacity-50" />
             </CardContent>
@@ -292,9 +312,9 @@ export function FinancialSummary() {
           <Card className="bg-card border-border/50 shadow-sm">
             <CardContent className="p-4 flex items-center justify-between">
               <div>
-                <p className="text-xs text-muted-foreground uppercase font-bold">Despesas ({selectedYear})</p>
+                <p className="text-xs text-muted-foreground uppercase font-bold">Despesas</p>
                 <p className="text-lg font-bold text-red-500">
-                  {formatCurrency(yearTotalDespesas + yearTotalComissoes)}
+                  {formatCurrency(periodTotalDespesas + periodTotalComissoes)}
                 </p>
               </div>
               <TrendingDown className="h-4 w-4 text-red-500 opacity-50" />
@@ -303,9 +323,9 @@ export function FinancialSummary() {
           <Card className="bg-card border-border/50 shadow-sm">
             <CardContent className="p-4 flex items-center justify-between">
               <div>
-                <p className="text-xs text-muted-foreground uppercase font-bold">Resultado ({selectedYear})</p>
-                <p className={cn("text-lg font-bold", yearTotalLucro >= 0 ? "text-[#E8BD27]" : "text-red-500")}>
-                  {formatCurrency(yearTotalLucro)}
+                <p className="text-xs text-muted-foreground uppercase font-bold">Resultado</p>
+                <p className={cn("text-lg font-bold", periodTotalLucro >= 0 ? "text-[#E8BD27]" : "text-red-500")}>
+                  {formatCurrency(periodTotalLucro)}
                 </p>
               </div>
               <DollarSign className="h-4 w-4 text-[#E8BD27] opacity-50" />
@@ -313,29 +333,21 @@ export function FinancialSummary() {
           </Card>
         </div>
 
-        <div className="w-full md:w-[180px] flex-shrink-0">
-          <Select value={selectedYear} onValueChange={setSelectedYear}>
-            <SelectTrigger className="w-full">
-              <div className="flex items-center gap-2">
-                <Filter className="h-4 w-4 text-muted-foreground" />
-                <SelectValue placeholder="Selecione o Ano" />
-              </div>
-            </SelectTrigger>
-            <SelectContent>
-              {availableYears.map((year) => (
-                <SelectItem key={year} value={year}>
-                  {year}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        <div className="w-full md:w-auto flex-shrink-0">
+          <MonthRangeFilter
+            startMonth={startMonth}
+            endMonth={endMonth}
+            onRangeChange={handleRangeChange}
+            minDate={minDate}
+            maxDate={maxDate}
+          />
         </div>
       </div>
 
       {/* MATRIZ DRE */}
       <Card className="border-border/50 bg-card overflow-hidden shadow-md">
         <CardHeader className="pb-2 border-b border-border/50 bg-muted/20">
-          <CardTitle className="text-lg flex items-center gap-2">Matriz DRE - {selectedYear}</CardTitle>
+          <CardTitle className="text-lg flex items-center gap-2">Matriz DRE - {getPeriodLabel()}</CardTitle>
         </CardHeader>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
@@ -621,7 +633,7 @@ function CommissionDetailDialog({
       <DialogContent className="max-w-[600px] bg-card border-border">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Search className="h-5 w-5 text-primary" />
+            <DollarSign className="h-5 w-5 text-primary" />
             Detalhamento de Comissões
           </DialogTitle>
           <p className="text-sm text-muted-foreground">
