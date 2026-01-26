@@ -351,24 +351,15 @@ export function ContractDetailDialog({ contractId, open, onOpenChange, onContrac
               Detalhes do Contrato
             </DialogTitle>
             <div className="flex items-center gap-2 mr-6">
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="gap-2"
-                      onClick={() => setIsEditDialogOpen(true)}
-                    >
-                      <Settings2 className="h-4 w-4" />
-                      Editar Contrato
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Alterar valor, parcelas e comissões</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-2"
+                onClick={() => setIsEditDialogOpen(true)}
+              >
+                <Settings2 className="h-4 w-4" />
+                Editar Contrato
+              </Button>
               <Badge variant="outline" className="border-[#E8BD27] text-[#E8BD27]">
                 {contract.status === "active" ? "Ativo" : "Concluído"}
               </Badge>
