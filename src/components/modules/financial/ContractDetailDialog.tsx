@@ -126,31 +126,51 @@ export function ContractDetailDialog({ contractId, open, onOpenChange, onContrac
   }, [commissions]);
 
   const quickPayInstallment = async (id: string) => {
+    // Guarda estado anterior para rollback
+    const previousInstallments = [...installments];
+    
+    // Optimistic update
+    setInstallments((prev) =>
+      prev.map((inst) => (inst.id === id ? { ...inst, status: "paid" } : inst))
+    );
+
     try {
-      await supabase.from("installments").update({ status: "paid" }).eq("id", id);
+      const { error } = await supabase.from("installments").update({ status: "paid" }).eq("id", id);
+      if (error) throw error;
 
       // Verifica se o contrato foi concluído
       await checkAndCompleteContract(contractId!);
 
       toast.success("Parcela recebida!");
-      fetchContractDetails();
       if (onContractUpdated) onContractUpdated();
     } catch (e) {
+      // Rollback em caso de erro
+      setInstallments(previousInstallments);
       toast.error("Erro ao baixar parcela.");
     }
   };
 
   const quickPayCommission = async (id: string) => {
+    // Guarda estado anterior para rollback
+    const previousCommissions = [...commissions];
+    
+    // Optimistic update
+    setCommissions((prev) =>
+      prev.map((comm) => (comm.id === id ? { ...comm, status: "paid" } : comm))
+    );
+
     try {
-      await supabase.from("commissions").update({ status: "paid" }).eq("id", id);
+      const { error } = await supabase.from("commissions").update({ status: "paid" }).eq("id", id);
+      if (error) throw error;
 
       // Verifica se o contrato foi concluído
       await checkAndCompleteContract(contractId!);
 
       toast.success("Comissão paga!");
-      fetchContractDetails();
       if (onContractUpdated) onContractUpdated();
     } catch (e) {
+      // Rollback em caso de erro
+      setCommissions(previousCommissions);
       toast.error("Erro ao pagar comissão.");
     }
   };
@@ -167,21 +187,65 @@ export function ContractDetailDialog({ contractId, open, onOpenChange, onContrac
   };
 
   const saveInstallment = async (id: string) => {
+    // Guarda estado anterior para rollback
+    const previousInstallments = [...installments];
+    const previousCommissions = [...commissions];
+    const previousContract = { ...contract };
+
+    const newVal = Number(editInstallmentForm.value);
+    const newFee = Number(editInstallmentForm.transaction_fee);
+    const netVal = Math.max(0, newVal - newFee);
+    const formattedDate = format(editInstallmentForm.due_date, "yyyy-MM-dd");
+
+    // Optimistic update para parcela
+    setInstallments((prev) =>
+      prev.map((inst) =>
+        inst.id === id
+          ? {
+              ...inst,
+              value: newVal,
+              due_date: formattedDate,
+              status: editInstallmentForm.status,
+              transaction_fee: newFee,
+            }
+          : inst
+      )
+    );
+
+    // Optimistic update para comissões vinculadas
+    setCommissions((prev) =>
+      prev.map((comm) => {
+        if (comm.installment_id === id) {
+          const newCommValue = (netVal * comm.percentage) / 100;
+          return { ...comm, value: newCommValue };
+        }
+        return comm;
+      })
+    );
+
+    // Calcula novo total otimisticamente
+    const newTotal = installments.reduce((acc, curr) => {
+      if (curr.id === id) return acc + newVal;
+      return acc + Number(curr.value);
+    }, 0);
+
+    setContract((prev: any) => ({ ...prev, total_value: newTotal }));
+    setEditingInstallmentId(null);
+
     try {
-      await supabase
+      const { error: instError } = await supabase
         .from("installments")
         .update({
-          value: Number(editInstallmentForm.value),
-          due_date: format(editInstallmentForm.due_date, "yyyy-MM-dd"),
+          value: newVal,
+          due_date: formattedDate,
           status: editInstallmentForm.status,
-          transaction_fee: Number(editInstallmentForm.transaction_fee),
+          transaction_fee: newFee,
         })
         .eq("id", id);
 
-      const newVal = Number(editInstallmentForm.value);
-      const newFee = Number(editInstallmentForm.transaction_fee);
-      const netVal = Math.max(0, newVal - newFee);
+      if (instError) throw instError;
 
+      // Atualiza comissões no servidor
       const { data: linkedCommissions } = await supabase
         .from("commissions")
         .select("id, percentage")
@@ -194,20 +258,23 @@ export function ContractDetailDialog({ contractId, open, onOpenChange, onContrac
         }
       }
 
+      // Atualiza total do contrato no servidor
       const { data: all } = await supabase.from("installments").select("value").eq("contract_id", contractId);
       if (all) {
-        const newTotal = all.reduce((acc, curr) => acc + Number(curr.value), 0);
-        await supabase.from("contracts").update({ total_value: newTotal }).eq("id", contractId);
+        const serverTotal = all.reduce((acc, curr) => acc + Number(curr.value), 0);
+        await supabase.from("contracts").update({ total_value: serverTotal }).eq("id", contractId);
       }
 
       // Verifica se o contrato foi concluído
       await checkAndCompleteContract(contractId!);
 
       toast.success("Parcela e comissões atualizadas!");
-      setEditingInstallmentId(null);
-      fetchContractDetails();
       if (onContractUpdated) onContractUpdated();
     } catch (error) {
+      // Rollback em caso de erro
+      setInstallments(previousInstallments);
+      setCommissions(previousCommissions);
+      setContract(previousContract);
       toast.error("Erro ao salvar parcela.");
     }
   };
@@ -223,25 +290,35 @@ export function ContractDetailDialog({ contractId, open, onOpenChange, onContrac
   };
 
   const saveCommission = async (id: string) => {
+    // Guarda estado anterior para rollback
+    const previousCommissions = [...commissions];
+
+    const updatedData = {
+      value: Number(editCommissionForm.value),
+      percentage: Number(editCommissionForm.percentage),
+      employee_name: editCommissionForm.employee_name,
+      status: editCommissionForm.status,
+    };
+
+    // Optimistic update
+    setCommissions((prev) =>
+      prev.map((comm) => (comm.id === id ? { ...comm, ...updatedData } : comm))
+    );
+    setEditingCommissionId(null);
+
     try {
-      await supabase
-        .from("commissions")
-        .update({
-          value: Number(editCommissionForm.value),
-          percentage: Number(editCommissionForm.percentage),
-          employee_name: editCommissionForm.employee_name,
-          status: editCommissionForm.status,
-        })
-        .eq("id", id);
+      const { error } = await supabase.from("commissions").update(updatedData).eq("id", id);
+      if (error) throw error;
 
       // Verifica se o contrato foi concluído
       await checkAndCompleteContract(contractId!);
 
       toast.success("Comissão atualizada!");
-      setEditingCommissionId(null);
-      fetchContractDetails();
       if (onContractUpdated) onContractUpdated();
     } catch (error) {
+      // Rollback em caso de erro
+      setCommissions(previousCommissions);
+      setEditingCommissionId(id);
       toast.error("Erro ao salvar comissão.");
     }
   };

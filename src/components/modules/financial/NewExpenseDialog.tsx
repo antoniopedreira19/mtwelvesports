@@ -36,7 +36,7 @@ const formSchema = z.object({
 });
 
 interface NewExpenseDialogProps {
-  onSuccess?: () => void;
+  onSuccess?: (updatedExpense?: any) => void;
   expenseToEdit?: any; // Se passar isso, vira modo de edição
   openProp?: boolean; // Controle externo de abertura
   onOpenChangeProp?: (open: boolean) => void;
@@ -82,38 +82,51 @@ export function NewExpenseDialog({ onSuccess, expenseToEdit, openProp, onOpenCha
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
-    try {
-      const expenseData: TablesInsert<"expenses"> = {
-        description: values.description,
-        amount: Number(values.amount),
-        category: values.category,
-        due_date: format(values.dueDate, "yyyy-MM-dd"), // Salva YYYY-MM-DD puro
-        status: values.isPaid ? "paid" : "pending",
-        paid_at: values.isPaid ? new Date().toISOString() : null,
-        is_recurring: values.isRecurring,
-      };
 
+    const expenseData: TablesInsert<"expenses"> = {
+      description: values.description,
+      amount: Number(values.amount),
+      category: values.category,
+      due_date: format(values.dueDate, "yyyy-MM-dd"),
+      status: values.isPaid ? "paid" : "pending",
+      paid_at: values.isPaid ? new Date().toISOString() : null,
+      is_recurring: values.isRecurring,
+    };
+
+    // Fecha o modal e reseta imediatamente (optimistic)
+    setOpen(false);
+    form.reset();
+
+    try {
       let error;
 
       if (expenseToEdit) {
         // UPDATE
         const { error: updateError } = await supabase.from("expenses").update(expenseData).eq("id", expenseToEdit.id);
         error = updateError;
+        
+        if (!error && onSuccess) {
+          // Passa dados atualizados para optimistic update
+          onSuccess({ ...expenseToEdit, ...expenseData });
+        }
       } else {
         // INSERT
         const { error: insertError } = await supabase.from("expenses").insert(expenseData);
         error = insertError;
+        
+        if (!error && onSuccess) {
+          onSuccess(); // Refetch para novos itens
+        }
       }
 
       if (error) throw error;
 
       toast.success(expenseToEdit ? "Despesa atualizada!" : "Despesa cadastrada!");
-      setOpen(false);
-      form.reset();
-      if (onSuccess) onSuccess();
     } catch (error) {
       console.error(error);
-      toast.error("Erro ao salvar despesa.");
+      toast.error("Erro ao salvar despesa. Recarregue a página.");
+      // Em caso de erro, chama onSuccess sem dados para forçar refetch
+      if (onSuccess) onSuccess();
     } finally {
       setIsLoading(false);
     }
