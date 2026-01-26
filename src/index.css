@@ -64,6 +64,12 @@
     --gold-light: 46 81% 65%;
     --surface: 0 0% 7%;
     --surface-elevated: 0 0% 10%;
+    
+    /* DRE Table sticky backgrounds - solid colors */
+    --table-header: 0 0% 10%;
+    --table-row: 0 0% 7%;
+    --table-row-alt: 0 0% 8%;
+    --table-row-result: 0 0% 9%;
   }
 
   .dark {

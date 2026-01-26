@@ -353,18 +353,18 @@ export function FinancialSummary() {
           <div className="overflow-x-auto">
             <Table className="relative">
               <TableHeader className="sticky top-0 z-30">
-                <TableRow className="bg-muted/30">
-                  <TableHead className="w-[200px] font-bold text-primary pl-6 sticky left-0 bg-muted/30 z-40 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">
+                <TableRow className="bg-table-header">
+                  <TableHead className="w-[200px] font-bold text-primary pl-6 sticky left-0 bg-table-header z-40 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.3)]">
                     Item
                   </TableHead>
                   {displayMonths.map((m) => (
                     <>
-                      <TableHead key={m} className="text-right min-w-[110px] font-semibold bg-muted/30">
+                      <TableHead key={m} className="text-right min-w-[110px] font-semibold bg-table-header">
                         {getMonthLabel(m)}
                       </TableHead>
                       <TableHead
                         key={`${m}-var`}
-                        className="w-[50px] text-center text-[10px] text-muted-foreground p-1 bg-muted/30"
+                        className="w-[50px] text-center text-[10px] text-muted-foreground p-1 bg-table-header"
                       >
                         AH%
                       </TableHead>
@@ -375,10 +375,10 @@ export function FinancialSummary() {
               <TableBody>
                 {/* RECEITAS */}
                 <TableRow
-                  className="cursor-pointer group hover:bg-muted/50 transition-colors"
+                  className="cursor-pointer group transition-colors hover:bg-table-row-alt"
                   onClick={() => toggleRow("receitas")}
                 >
-                  <TableCell className="font-bold text-emerald-500 flex items-center gap-2 pl-4 sticky left-0 bg-card z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] group-hover:bg-muted/50 transition-colors">
+                  <TableCell className="font-bold text-emerald-500 flex items-center gap-2 pl-4 sticky left-0 bg-table-row z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.3)] group-hover:bg-table-row-alt transition-colors">
                     {expandedRows.receitas ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}{" "}
                     Receitas
                   </TableCell>
@@ -398,8 +398,8 @@ export function FinancialSummary() {
                 </TableRow>
                 {expandedRows.receitas &&
                   getActiveItems(matrix.receitas.items).map((title) => (
-                    <TableRow key={title} className="bg-muted/5 text-sm hover:bg-muted/10 transition-colors">
-                      <TableCell className="pl-10 text-muted-foreground flex items-center gap-2 sticky left-0 bg-muted/5 z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] hover:bg-muted/10">
+                    <TableRow key={title} className="bg-table-row-alt text-sm hover:bg-secondary transition-colors">
+                      <TableCell className="pl-10 text-muted-foreground flex items-center gap-2 sticky left-0 bg-table-row-alt z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.3)] hover:bg-secondary">
                         <div className="w-1 h-1 rounded-full bg-emerald-500/50" /> {title}
                       </TableCell>
                       {displayMonths.map((m) => (
@@ -414,7 +414,7 @@ export function FinancialSummary() {
                               <span className="text-muted-foreground/20">-</span>
                             )}
                           </TableCell>
-                          <TableCell className="border-l border-dashed border-border/30 bg-muted/5"></TableCell>
+                          <TableCell className="border-l border-dashed border-border/30"></TableCell>
                         </>
                       ))}
                     </TableRow>
@@ -422,10 +422,10 @@ export function FinancialSummary() {
 
                 {/* COMISSÕES */}
                 <TableRow
-                  className="cursor-pointer group hover:bg-muted/50 transition-colors"
+                  className="cursor-pointer group transition-colors hover:bg-table-row-alt"
                   onClick={() => toggleRow("comissoes")}
                 >
-                  <TableCell className="font-bold text-muted-foreground flex items-center gap-2 pl-4 sticky left-0 bg-card z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] group-hover:bg-muted/50 transition-colors">
+                  <TableCell className="font-bold text-muted-foreground flex items-center gap-2 pl-4 sticky left-0 bg-table-row z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.3)] group-hover:bg-table-row-alt transition-colors">
                     {expandedRows.comissoes ? (
                       <ChevronDown className="h-4 w-4" />
                     ) : (
@@ -449,16 +449,15 @@ export function FinancialSummary() {
                 </TableRow>
                 {expandedRows.comissoes &&
                   getActiveItems(matrix.comissoes.items).map((title) => (
-                    <TableRow key={title} className="bg-muted/5 text-sm hover:bg-muted/10 transition-colors">
-                      <TableCell className="pl-10 text-muted-foreground flex items-center gap-2 sticky left-0 bg-muted/5 z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] hover:bg-muted/10">
+                    <TableRow key={title} className="bg-table-row-alt text-sm hover:bg-secondary transition-colors">
+                      <TableCell className="pl-10 text-muted-foreground flex items-center gap-2 sticky left-0 bg-table-row-alt z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.3)] hover:bg-secondary">
                         <div className="w-1 h-1 rounded-full bg-muted-foreground/50" /> {title}
                       </TableCell>
                       {displayMonths.map((m) => {
                         const cellData = matrix.comissoes.items[title][m];
-                        // Sem traços, apenas cursor pointer e hover suave
                         const clickableClass =
                           cellData && cellData.amount > 0
-                            ? "cursor-pointer hover:bg-muted/20 hover:text-primary transition-colors"
+                            ? "cursor-pointer hover:bg-secondary hover:text-primary transition-colors"
                             : "";
 
                         return (
@@ -477,7 +476,7 @@ export function FinancialSummary() {
                                 <span className="text-muted-foreground/20">-</span>
                               )}
                             </TableCell>
-                            <TableCell className="border-l border-dashed border-border/30 bg-muted/5"></TableCell>
+                            <TableCell className="border-l border-dashed border-border/30"></TableCell>
                           </>
                         );
                       })}
@@ -486,10 +485,10 @@ export function FinancialSummary() {
 
                 {/* DESPESAS */}
                 <TableRow
-                  className="cursor-pointer group hover:bg-muted/50 transition-colors"
+                  className="cursor-pointer group transition-colors hover:bg-table-row-alt"
                   onClick={() => toggleRow("despesas")}
                 >
-                  <TableCell className="font-bold text-red-400 flex items-center gap-2 pl-4 sticky left-0 bg-card z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] group-hover:bg-muted/50 transition-colors">
+                  <TableCell className="font-bold text-red-400 flex items-center gap-2 pl-4 sticky left-0 bg-table-row z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.3)] group-hover:bg-table-row-alt transition-colors">
                     {expandedRows.despesas ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}{" "}
                     (-) Despesas
                   </TableCell>
@@ -509,8 +508,8 @@ export function FinancialSummary() {
                 </TableRow>
                 {expandedRows.despesas &&
                   getActiveItems(matrix.despesas.items).map((title) => (
-                    <TableRow key={title} className="bg-muted/5 text-sm hover:bg-muted/10 transition-colors">
-                      <TableCell className="pl-10 text-muted-foreground flex items-center gap-2 sticky left-0 bg-muted/5 z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] hover:bg-muted/10">
+                    <TableRow key={title} className="bg-table-row-alt text-sm hover:bg-secondary transition-colors">
+                      <TableCell className="pl-10 text-muted-foreground flex items-center gap-2 sticky left-0 bg-table-row-alt z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.3)] hover:bg-secondary">
                         <div className="w-1 h-1 rounded-full bg-red-400/50" /> {title}
                       </TableCell>
                       {displayMonths.map((m) => (
@@ -525,15 +524,15 @@ export function FinancialSummary() {
                               <span className="text-muted-foreground/20">-</span>
                             )}
                           </TableCell>
-                          <TableCell className="border-l border-dashed border-border/30 bg-muted/5"></TableCell>
+                          <TableCell className="border-l border-dashed border-border/30"></TableCell>
                         </>
                       ))}
                     </TableRow>
                   ))}
 
                 {/* RESULTADO */}
-                <TableRow className="bg-muted/10 border-t-2 border-border/50">
-                  <TableCell className="font-bold text-[#E8BD27] pl-4 sticky left-0 bg-muted/10 z-30 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">
+                <TableRow className="bg-table-row-result border-t-2 border-border/50">
+                  <TableCell className="font-bold text-[#E8BD27] pl-4 sticky left-0 bg-table-row-result z-30 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.3)]">
                     (=) RESULTADO
                   </TableCell>
                   {displayMonths.map((m) => (
