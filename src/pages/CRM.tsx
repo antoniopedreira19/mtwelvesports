@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Search, Globe } from "lucide-react";
+import { Search } from "lucide-react";
 import { PipelineBoard } from "@/components/modules/crm/PipelineBoard";
 import { NewClientDialog } from "@/components/modules/crm/NewClientDialog";
 import { ContractBuilder } from "@/components/modules/financial/ContractBuilder";
@@ -19,7 +19,6 @@ export default function CRM() {
 
   // Filtros
   const [searchTerm, setSearchTerm] = useState("");
-  const [nationalityFilter, setNationalityFilter] = useState("");
 
   // Estado para forçar atualização do Board
   const [refreshTrigger, setRefreshTrigger] = useState(0);
@@ -104,16 +103,6 @@ export default function CRM() {
             className="pl-9 bg-background"
           />
         </div>
-
-        <div className="relative flex-1 md:max-w-xs">
-          <Globe className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Filtrar por nacionalidade..."
-            value={nationalityFilter}
-            onChange={(e) => setNationalityFilter(e.target.value)}
-            className="pl-9 bg-background"
-          />
-        </div>
       </div>
 
       {/* Pipeline Board */}
@@ -121,7 +110,6 @@ export default function CRM() {
         key={refreshTrigger}
         onClientMoveToFechado={handleClientMoveToFechado}
         searchTerm={searchTerm}
-        nationalityFilter={nationalityFilter}
       />
 
       {/* Contract Modal */}
