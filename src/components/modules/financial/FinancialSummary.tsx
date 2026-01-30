@@ -61,7 +61,7 @@ export function FinancialSummary() {
   const [endMonth, setEndMonth] = useState<Date>(() => {
     return startOfMonth(new Date()); // Mês atual
   });
-  
+
   const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({
     receitas: false,
     despesas: false,
@@ -302,8 +302,10 @@ export function FinancialSummary() {
   const prevMonthReceitas = matrix.receitas.totalByMonth[prevMonthKey] || 0;
   const receitasVariation = calculateVariation(currentMonthReceitas, prevMonthReceitas);
 
-  const currentMonthDespesas = (matrix.despesas.totalByMonth[currentMonthKey] || 0) + (matrix.comissoes.totalByMonth[currentMonthKey] || 0);
-  const prevMonthDespesas = (matrix.despesas.totalByMonth[prevMonthKey] || 0) + (matrix.comissoes.totalByMonth[prevMonthKey] || 0);
+  const currentMonthDespesas =
+    (matrix.despesas.totalByMonth[currentMonthKey] || 0) + (matrix.comissoes.totalByMonth[currentMonthKey] || 0);
+  const prevMonthDespesas =
+    (matrix.despesas.totalByMonth[prevMonthKey] || 0) + (matrix.comissoes.totalByMonth[prevMonthKey] || 0);
   const despesasVariation = calculateVariation(currentMonthDespesas, prevMonthDespesas);
 
   const currentMonthResultado = currentMonthReceitas - currentMonthDespesas;
@@ -332,9 +334,15 @@ export function FinancialSummary() {
                   <p className="text-sm font-semibold text-foreground">{formatCurrency(currentMonthReceitas)}</p>
                 </div>
                 <div>
-                  <p className="text-[10px] text-muted-foreground uppercase">Variação Mês Anterior</p>
-                  <p className={cn("text-sm font-semibold", receitasVariation >= 0 ? "text-emerald-500" : "text-red-500")}>
-                    {receitasVariation >= 0 ? "+" : ""}{receitasVariation.toFixed(2)}%
+                  <p className="text-[10px] text-muted-foreground uppercase">Var. Mês Anterior</p>
+                  <p
+                    className={cn(
+                      "text-sm font-semibold",
+                      receitasVariation >= 0 ? "text-emerald-500" : "text-red-500",
+                    )}
+                  >
+                    {receitasVariation >= 0 ? "+" : ""}
+                    {receitasVariation.toFixed(2)}%
                   </p>
                 </div>
               </div>
@@ -355,8 +363,14 @@ export function FinancialSummary() {
                 </div>
                 <div>
                   <p className="text-[10px] text-muted-foreground uppercase">Variação Mês Anterior</p>
-                  <p className={cn("text-sm font-semibold", despesasVariation <= 0 ? "text-emerald-500" : "text-red-500")}>
-                    {despesasVariation >= 0 ? "+" : ""}{despesasVariation.toFixed(2)}%
+                  <p
+                    className={cn(
+                      "text-sm font-semibold",
+                      despesasVariation <= 0 ? "text-emerald-500" : "text-red-500",
+                    )}
+                  >
+                    {despesasVariation >= 0 ? "+" : ""}
+                    {despesasVariation.toFixed(2)}%
                   </p>
                 </div>
               </div>
@@ -375,8 +389,14 @@ export function FinancialSummary() {
                 </div>
                 <div>
                   <p className="text-[10px] text-muted-foreground uppercase">Variação Mês Anterior</p>
-                  <p className={cn("text-sm font-semibold", resultadoVariation >= 0 ? "text-emerald-500" : "text-red-500")}>
-                    {resultadoVariation >= 0 ? "+" : ""}{resultadoVariation.toFixed(2)}%
+                  <p
+                    className={cn(
+                      "text-sm font-semibold",
+                      resultadoVariation >= 0 ? "text-emerald-500" : "text-red-500",
+                    )}
+                  >
+                    {resultadoVariation >= 0 ? "+" : ""}
+                    {resultadoVariation.toFixed(2)}%
                   </p>
                 </div>
               </div>
@@ -395,8 +415,11 @@ export function FinancialSummary() {
                 </div>
                 <div>
                   <p className="text-[10px] text-muted-foreground uppercase">Variação Mês Anterior</p>
-                  <p className={cn("text-sm font-semibold", margemVariation >= 0 ? "text-emerald-500" : "text-red-500")}>
-                    {margemVariation >= 0 ? "+" : ""}{margemVariation.toFixed(2)}%
+                  <p
+                    className={cn("text-sm font-semibold", margemVariation >= 0 ? "text-emerald-500" : "text-red-500")}
+                  >
+                    {margemVariation >= 0 ? "+" : ""}
+                    {margemVariation.toFixed(2)}%
                   </p>
                 </div>
               </div>
