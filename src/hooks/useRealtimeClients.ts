@@ -3,8 +3,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Client, PipelineColumn, PipelineStage } from "@/types";
 
 const initialColumns: PipelineColumn[] = [
-  { id: "radar", title: "Radar", clients: [] },
-  { id: "contato", title: "Contato", clients: [] },
+  { id: "radar", title: "Leads", clients: [] },
+  { id: "contato", title: "SQL", clients: [] },
   { id: "negociacao", title: "Negociação", clients: [] },
   { id: "fechado", title: "Fechado", clients: [] },
   { id: "perdido", title: "Perdido", clients: [] },

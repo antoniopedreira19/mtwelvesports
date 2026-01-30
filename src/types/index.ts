@@ -21,6 +21,9 @@ export interface Client {
   updated_at: string;
   sport?: string;
   status?: string;
+  meeting_date?: string | null;
+  meeting_responsible?: string | null;
+  lost_reason?: string | null;
 }
 
 export interface PipelineColumn {
