@@ -22,7 +22,6 @@ import { supabase } from "@/integrations/supabase/client";
 interface PipelineBoardProps {
   onClientMoveToFechado: (client: Client) => void;
   searchTerm?: string;
-  nationalityFilter?: string;
 }
 
 const columnColors: Record<PipelineStage, string> = {
@@ -41,7 +40,7 @@ const columnBadgeColors: Record<PipelineStage, string> = {
   perdido: "bg-red-500/10 text-red-400",
 };
 
-export function PipelineBoard({ onClientMoveToFechado, searchTerm = "", nationalityFilter = "" }: PipelineBoardProps) {
+export function PipelineBoard({ onClientMoveToFechado, searchTerm = "" }: PipelineBoardProps) {
   const { columns, setColumns, updateClientStage, updateClient, deleteClient } = useRealtimeClients();
   
   // View dialog state
@@ -358,11 +357,7 @@ export function PipelineBoard({ onClientMoveToFechado, searchTerm = "", national
         <div className="flex gap-4 overflow-x-auto pb-4">
           {columns.map((column) => {
             const filteredClients = column.clients.filter((client) => {
-              const matchesName = client.name.toLowerCase().includes(searchTerm.toLowerCase());
-              const matchesNation = nationalityFilter
-                ? client.nationality?.toLowerCase().includes(nationalityFilter.toLowerCase())
-                : true;
-              return matchesName && matchesNation;
+              return client.name.toLowerCase().includes(searchTerm.toLowerCase());
             });
 
             return (
