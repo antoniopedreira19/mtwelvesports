@@ -13,24 +13,30 @@ import {
 } from "@/components/ui/sidebar";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useAuth } from "@/contexts/AuthContext";
+import { useUserRole } from "@/hooks/useUserRole";
 import { Button } from "@/components/ui/button";
 
 export function AppSidebar() {
   const { state } = useSidebar();
   const location = useLocation();
   const { user, signOut } = useAuth();
+  const { isAdmin } = useUserRole();
   const isCollapsed = state === "collapsed";
 
   // URL da Logo Atualizada (Versão 2)
   const LOGO_URL =
     "https://ychhgfsavlnoyjvfpdxa.supabase.co/storage/v1/object/public/logos&templates/image-removebg-preview%20(2).png";
 
-  const menuItems = [
-    { title: "Dashboard", url: "/", icon: LayoutDashboard },
-    { title: "CRM", url: "/crm", icon: Users },
-    { title: "Financeiro", url: "/financeiro", icon: Wallet },
-    { title: "Settings", url: "/settings", icon: Settings },
+  // Menu items based on role
+  const allMenuItems = [
+    { title: "Dashboard", url: "/", icon: LayoutDashboard, adminOnly: true },
+    { title: "CRM", url: "/crm", icon: Users, adminOnly: false },
+    { title: "Financeiro", url: "/financeiro", icon: Wallet, adminOnly: true },
+    { title: "Settings", url: "/settings", icon: Settings, adminOnly: true },
   ];
+
+  // Filter menu items based on role
+  const menuItems = allMenuItems.filter((item) => !item.adminOnly || isAdmin);
 
   return (
     <Sidebar collapsible="icon" className="border-r border-border/50 bg-black text-white">

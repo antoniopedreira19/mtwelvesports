@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { RoleProtectedRoute } from "@/components/RoleProtectedRoute";
 import Dashboard from "./pages/Dashboard";
 import CRM from "./pages/CRM";
 import Financeiro from "./pages/Financeiro";
@@ -25,10 +26,33 @@ const App = () => (
           <Routes>
             <Route path="/auth" element={<Auth />} />
             <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
-              <Route path="/" element={<Dashboard />} />
+              {/* Admin only routes */}
+              <Route
+                path="/"
+                element={
+                  <RoleProtectedRoute allowedRoles={["admin"]}>
+                    <Dashboard />
+                  </RoleProtectedRoute>
+                }
+              />
+              <Route
+                path="/financeiro"
+                element={
+                  <RoleProtectedRoute allowedRoles={["admin"]}>
+                    <Financeiro />
+                  </RoleProtectedRoute>
+                }
+              />
+              <Route
+                path="/settings"
+                element={
+                  <RoleProtectedRoute allowedRoles={["admin"]}>
+                    <Settings />
+                  </RoleProtectedRoute>
+                }
+              />
+              {/* Both admin and member can access */}
               <Route path="/crm" element={<CRM />} />
-              <Route path="/financeiro" element={<Financeiro />} />
-              <Route path="/settings" element={<Settings />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>
