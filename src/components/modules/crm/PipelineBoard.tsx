@@ -21,8 +21,8 @@ interface PipelineBoardProps {
 }
 
 const columnColors: Record<PipelineStage, string> = {
-  radar: "border-t-blue-500",
-  contato: "border-t-yellow-500",
+  leads: "border-t-blue-500",
+  sql: "border-t-yellow-500",
   negociacao: "border-t-orange-500",
   fechado: "border-t-green-500",
   perdido: "border-t-red-500",
@@ -129,7 +129,9 @@ export function PipelineBoard({ onClientMoveToFechado, searchTerm = "", national
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <h3 className="font-semibold text-sm">{column.title}</h3>
-                      <span className={cn("px-2 py-0.5 rounded-full text-xs font-medium", columnBadgeColors[column.id])}>
+                      <span
+                        className={cn("px-2 py-0.5 rounded-full text-xs font-medium", columnBadgeColors[column.id])}
+                      >
                         {filteredClients.length}
                       </span>
                     </div>
@@ -210,7 +212,6 @@ export function PipelineBoard({ onClientMoveToFechado, searchTerm = "", national
                                   </DropdownMenuContent>
                                 </DropdownMenu>
                               </div>
-
 
                               <div className="flex items-center gap-3 text-xs text-muted-foreground mt-2">
                                 {client.phone && (
