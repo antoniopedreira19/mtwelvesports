@@ -294,45 +294,115 @@ export function FinancialSummary() {
   const periodTotalComissoes = displayMonths.reduce((sum, m) => sum + (matrix.comissoes.totalByMonth[m] || 0), 0);
   const periodTotalLucro = periodTotalReceitas - (periodTotalDespesas + periodTotalComissoes);
 
+  // Cálculo Mês Atual e Mês Anterior
+  const currentMonthKey = format(startOfMonth(new Date()), "yyyy-MM");
+  const prevMonthKey = getPrevMonthKey(currentMonthKey);
+
+  const currentMonthReceitas = matrix.receitas.totalByMonth[currentMonthKey] || 0;
+  const prevMonthReceitas = matrix.receitas.totalByMonth[prevMonthKey] || 0;
+  const receitasVariation = calculateVariation(currentMonthReceitas, prevMonthReceitas);
+
+  const currentMonthDespesas = (matrix.despesas.totalByMonth[currentMonthKey] || 0) + (matrix.comissoes.totalByMonth[currentMonthKey] || 0);
+  const prevMonthDespesas = (matrix.despesas.totalByMonth[prevMonthKey] || 0) + (matrix.comissoes.totalByMonth[prevMonthKey] || 0);
+  const despesasVariation = calculateVariation(currentMonthDespesas, prevMonthDespesas);
+
+  const currentMonthResultado = currentMonthReceitas - currentMonthDespesas;
+  const prevMonthResultado = prevMonthReceitas - prevMonthDespesas;
+  const resultadoVariation = calculateVariation(currentMonthResultado, prevMonthResultado);
+
+  // Calcular margem
+  const margem = periodTotalReceitas > 0 ? (periodTotalLucro / periodTotalReceitas) * 100 : 0;
+  const currentMonthMargem = currentMonthReceitas > 0 ? (currentMonthResultado / currentMonthReceitas) * 100 : 0;
+  const prevMonthMargem = prevMonthReceitas > 0 ? (prevMonthResultado / prevMonthReceitas) * 100 : 0;
+  const margemVariation = prevMonthMargem !== 0 ? currentMonthMargem - prevMonthMargem : 0;
+
   return (
     <div className="space-y-6">
       {/* HEADER E FILTROS */}
       <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full md:w-auto flex-1">
-          {/* CARDS */}
-          <Card className="bg-card border-border/50 shadow-sm">
-            <CardContent className="p-4 flex items-center justify-between">
-              <div>
-                <p className="text-xs text-muted-foreground uppercase font-bold">Receita</p>
-                <p className="text-lg font-bold text-emerald-500">{formatCurrency(periodTotalReceitas)}</p>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 w-full">
+          {/* CARD RECEITA */}
+          <Card className="bg-card border-l-2 border-l-emerald-500 border-border/50 shadow-sm">
+            <CardContent className="p-4">
+              <p className="text-xs text-muted-foreground uppercase font-bold mb-1">Receita</p>
+              <p className="text-xl font-bold text-foreground">{formatCurrency(periodTotalReceitas)}</p>
+              <div className="flex items-center gap-6 mt-3 pt-3 border-t border-border/30">
+                <div>
+                  <p className="text-[10px] text-muted-foreground uppercase">Mês Atual</p>
+                  <p className="text-sm font-semibold text-foreground">{formatCurrency(currentMonthReceitas)}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] text-muted-foreground uppercase">Variação Mês Anterior</p>
+                  <p className={cn("text-sm font-semibold", receitasVariation >= 0 ? "text-emerald-500" : "text-red-500")}>
+                    {receitasVariation >= 0 ? "+" : ""}{receitasVariation.toFixed(2)}%
+                  </p>
+                </div>
               </div>
-              <TrendingUp className="h-4 w-4 text-emerald-500 opacity-50" />
             </CardContent>
           </Card>
-          <Card className="bg-card border-border/50 shadow-sm">
-            <CardContent className="p-4 flex items-center justify-between">
-              <div>
-                <p className="text-xs text-muted-foreground uppercase font-bold">Despesas</p>
-                <p className="text-lg font-bold text-red-500">
-                  {formatCurrency(periodTotalDespesas + periodTotalComissoes)}
-                </p>
+
+          {/* CARD DESPESA */}
+          <Card className="bg-card border-l-2 border-l-red-500 border-border/50 shadow-sm">
+            <CardContent className="p-4">
+              <p className="text-xs text-muted-foreground uppercase font-bold mb-1">Despesa</p>
+              <p className="text-xl font-bold text-foreground">
+                -{formatCurrency(periodTotalDespesas + periodTotalComissoes)}
+              </p>
+              <div className="flex items-center gap-6 mt-3 pt-3 border-t border-border/30">
+                <div>
+                  <p className="text-[10px] text-muted-foreground uppercase">Mês Atual</p>
+                  <p className="text-sm font-semibold text-foreground">-{formatCurrency(currentMonthDespesas)}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] text-muted-foreground uppercase">Variação Mês Anterior</p>
+                  <p className={cn("text-sm font-semibold", despesasVariation <= 0 ? "text-emerald-500" : "text-red-500")}>
+                    {despesasVariation >= 0 ? "+" : ""}{despesasVariation.toFixed(2)}%
+                  </p>
+                </div>
               </div>
-              <TrendingDown className="h-4 w-4 text-red-500 opacity-50" />
             </CardContent>
           </Card>
-          <Card className="bg-card border-border/50 shadow-sm">
-            <CardContent className="p-4 flex items-center justify-between">
-              <div>
-                <p className="text-xs text-muted-foreground uppercase font-bold">Resultado</p>
-                <p className={cn("text-lg font-bold", periodTotalLucro >= 0 ? "text-[#E8BD27]" : "text-red-500")}>
-                  {formatCurrency(periodTotalLucro)}
-                </p>
+
+          {/* CARD RESULTADO */}
+          <Card className="bg-card border-l-2 border-l-primary border-border/50 shadow-sm">
+            <CardContent className="p-4">
+              <p className="text-xs text-muted-foreground uppercase font-bold mb-1">Resultado</p>
+              <p className="text-xl font-bold text-foreground">{formatCurrency(periodTotalLucro)}</p>
+              <div className="flex items-center gap-6 mt-3 pt-3 border-t border-border/30">
+                <div>
+                  <p className="text-[10px] text-muted-foreground uppercase">Mês Atual</p>
+                  <p className="text-sm font-semibold text-foreground">{formatCurrency(currentMonthResultado)}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] text-muted-foreground uppercase">Variação Mês Anterior</p>
+                  <p className={cn("text-sm font-semibold", resultadoVariation >= 0 ? "text-emerald-500" : "text-red-500")}>
+                    {resultadoVariation >= 0 ? "+" : ""}{resultadoVariation.toFixed(2)}%
+                  </p>
+                </div>
               </div>
-              <DollarSign className="h-4 w-4 text-[#E8BD27] opacity-50" />
+            </CardContent>
+          </Card>
+
+          {/* CARD MARGEM */}
+          <Card className="bg-card border-l-2 border-l-blue-500 border-border/50 shadow-sm">
+            <CardContent className="p-4">
+              <p className="text-xs text-muted-foreground uppercase font-bold mb-1">Margem</p>
+              <p className="text-xl font-bold text-foreground">{margem.toFixed(2)}%</p>
+              <div className="flex items-center gap-6 mt-3 pt-3 border-t border-border/30">
+                <div>
+                  <p className="text-[10px] text-muted-foreground uppercase">Mês Atual</p>
+                  <p className="text-sm font-semibold text-foreground">{currentMonthMargem.toFixed(2)}%</p>
+                </div>
+                <div>
+                  <p className="text-[10px] text-muted-foreground uppercase">Variação Mês Anterior</p>
+                  <p className={cn("text-sm font-semibold", margemVariation >= 0 ? "text-emerald-500" : "text-red-500")}>
+                    {margemVariation >= 0 ? "+" : ""}{margemVariation.toFixed(2)}%
+                  </p>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </div>
-
       </div>
 
       {/* MATRIZ DRE */}
