@@ -21,8 +21,8 @@ interface PipelineBoardProps {
 }
 
 const columnColors: Record<PipelineStage, string> = {
-  leads: "border-t-blue-500",
-  sql: "border-t-yellow-500",
+  radar: "border-t-blue-500",
+  contato: "border-t-yellow-500",
   negociacao: "border-t-orange-500",
   fechado: "border-t-green-500",
   perdido: "border-t-red-500",
