@@ -459,20 +459,20 @@ export function FinancialSummary() {
         </CardHeader>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
-            <Table className="relative w-full table-fixed">
+            <Table className="relative">
               <TableHeader className="sticky top-0 z-30">
                 <TableRow className="bg-table-header">
-                  <TableHead className="w-[280px] font-bold text-primary pl-6 sticky left-0 bg-table-header z-40 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.3)]">
+                  <TableHead className="font-bold text-primary pl-6 sticky left-0 bg-table-header z-40 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.3)]">
                     Item
                   </TableHead>
                   {displayMonths.map((m) => (
                     <>
-                      <TableHead key={m} className="text-right font-semibold bg-table-header">
+                      <TableHead key={m} className="text-right w-[130px] min-w-[130px] font-semibold bg-table-header">
                         {getMonthLabel(m)}
                       </TableHead>
                       <TableHead
                         key={`${m}-var`}
-                        className="w-[50px] text-center text-[10px] text-muted-foreground p-1 bg-table-header"
+                        className="w-[50px] min-w-[50px] text-center text-[10px] text-muted-foreground p-1 bg-table-header"
                       >
                         AH%
                       </TableHead>
