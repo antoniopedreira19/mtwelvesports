@@ -1,16 +1,23 @@
 import { useState } from "react";
-import { Search } from "lucide-react";
+import { Search, Globe, CalendarDays, ChevronLeft, ChevronRight, X } from "lucide-react";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import { PipelineBoard } from "@/components/modules/crm/PipelineBoard";
 import { NewClientDialog } from "@/components/modules/crm/NewClientDialog";
 import { ContractBuilder } from "@/components/modules/financial/ContractBuilder";
 import { Client, Installment, Commission } from "@/types";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useToast } from "@/hooks/use-toast";
 import { createContract } from "@/services/contractService";
+import { cn } from "@/lib/utils";
 
-// Tipo auxiliar para alinhar com o ContractBuilder
 type InstallmentWithFee = Omit<Installment, "id" | "contract_id"> & { transaction_fee?: number };
+
+// Array fixo para a UI do seletor de meses
+const MONTHS_PT = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
 
 export default function CRM() {
   const [isContractModalOpen, setIsContractModalOpen] = useState(false);
@@ -19,6 +26,12 @@ export default function CRM() {
 
   // Filtros
   const [searchTerm, setSearchTerm] = useState("");
+  const [nationalityFilter, setNationalityFilter] = useState("");
+  const [monthFilter, setMonthFilter] = useState(""); // Filtro de Mês ("YYYY-MM")
+
+  // Estados exclusivos do Popover de Mês
+  const [isMonthPickerOpen, setIsMonthPickerOpen] = useState(false);
+  const [pickerYear, setPickerYear] = useState(new Date().getFullYear());
 
   // Estado para forçar atualização do Board
   const [refreshTrigger, setRefreshTrigger] = useState(0);
@@ -33,7 +46,6 @@ export default function CRM() {
   const handleSaveContract = async (data: {
     totalValue: number;
     installments: InstallmentWithFee[];
-    // Correção: Omitimos 'status' e 'installment_id' pois ainda não existem nesta etapa
     commissions: Omit<Commission, "id" | "contract_id" | "value" | "installment_id" | "status">[];
   }) => {
     if (!selectedClient) {
@@ -75,9 +87,17 @@ export default function CRM() {
     }
   };
 
-  // Função chamada quando um novo atleta é criado com sucesso
   const handleClientCreated = () => {
     setRefreshTrigger((prev) => prev + 1);
+  };
+
+  // Helper para mostrar o mês selecionado no botão
+  const getDisplayMonth = () => {
+    if (!monthFilter) return "Mês de entrada";
+    const [year, month] = monthFilter.split("-");
+    const date = new Date(Number(year), Number(month) - 1, 1);
+    const formatted = format(date, "MMMM yyyy", { locale: ptBR });
+    return formatted.charAt(0).toUpperCase() + formatted.slice(1);
   };
 
   return (
@@ -97,11 +117,88 @@ export default function CRM() {
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Buscar por nome..."
+            placeholder="Buscar por nome ou clube..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-9 bg-background"
+            className="pl-9 bg-background h-10"
           />
+        </div>
+
+        <div className="relative flex-1 md:max-w-[250px]">
+          <Globe className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Nacionalidade..."
+            value={nationalityFilter}
+            onChange={(e) => setNationalityFilter(e.target.value)}
+            className="pl-9 bg-background h-10"
+          />
+        </div>
+
+        {/* CUSTOM MONTH PICKER UI/UX */}
+        <div className="relative flex-1 md:max-w-[220px]">
+          <Popover open={isMonthPickerOpen} onOpenChange={setIsMonthPickerOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                className={cn(
+                  "w-full justify-start text-left font-normal border-border bg-background h-10 px-3",
+                  !monthFilter && "text-muted-foreground",
+                )}
+              >
+                <CalendarDays className="mr-2 h-4 w-4 opacity-70" />
+                <span className="flex-1 truncate">{getDisplayMonth()}</span>
+                {monthFilter && (
+                  <div
+                    role="button"
+                    tabIndex={0}
+                    className="ml-2 p-0.5 rounded-full hover:bg-muted transition-colors"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setMonthFilter(""); // Limpa o filtro
+                    }}
+                  >
+                    <X className="h-3.5 w-3.5 opacity-70 hover:opacity-100 text-red-400" />
+                  </div>
+                )}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-64 p-3 bg-card border-border shadow-xl rounded-xl" align="end">
+              <div className="flex items-center justify-between pb-3 mb-3 border-b border-border/50">
+                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setPickerYear(pickerYear - 1)}>
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <span className="font-semibold text-sm">{pickerYear}</span>
+                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setPickerYear(pickerYear + 1)}>
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                {MONTHS_PT.map((month, index) => {
+                  const monthValue = `${pickerYear}-${String(index + 1).padStart(2, "0")}`;
+                  const isSelected = monthFilter === monthValue;
+
+                  return (
+                    <Button
+                      key={month}
+                      variant={isSelected ? "default" : "ghost"}
+                      className={cn(
+                        "h-9 text-xs",
+                        isSelected
+                          ? "bg-[#E8BD27] text-primary-foreground hover:bg-[#E8BD27]/90 shadow-sm"
+                          : "hover:bg-muted",
+                      )}
+                      onClick={() => {
+                        setMonthFilter(monthValue);
+                        setIsMonthPickerOpen(false); // Fecha o popover ao selecionar
+                      }}
+                    >
+                      {month}
+                    </Button>
+                  );
+                })}
+              </div>
+            </PopoverContent>
+          </Popover>
         </div>
       </div>
 
@@ -110,19 +207,22 @@ export default function CRM() {
         key={refreshTrigger}
         onClientMoveToFechado={handleClientMoveToFechado}
         searchTerm={searchTerm}
+        nationalityFilter={nationalityFilter}
+        monthFilter={monthFilter}
       />
 
       {/* Contract Modal */}
       <Dialog open={isContractModalOpen} onOpenChange={setIsContractModalOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="text-xl">
-              <span className="gold-text">Novo Contrato</span>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-card border-border p-0 gap-0">
+          <DialogHeader className="p-6 pb-2 border-b border-border/50">
+            <DialogTitle className="text-xl flex items-center gap-2">
+              <span className="w-1 h-6 bg-[#E8BD27] rounded-full inline-block"></span>
+              Novo Contrato
             </DialogTitle>
           </DialogHeader>
-          <div className="p-4">
+          <div className="p-6">
             <ContractBuilder
-              client={selectedClient}
+              client={selectedClient ? { id: selectedClient.id, name: selectedClient.name } : undefined}
               onSave={handleSaveContract}
               onCancel={() => {
                 setIsContractModalOpen(false);
