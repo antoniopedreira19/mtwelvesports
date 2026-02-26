@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Search, Globe, CalendarDays } from "lucide-react";
+import { Search } from "lucide-react";
 import { PipelineBoard } from "@/components/modules/crm/PipelineBoard";
 import { NewClientDialog } from "@/components/modules/crm/NewClientDialog";
 import { ContractBuilder } from "@/components/modules/financial/ContractBuilder";
@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { useToast } from "@/hooks/use-toast";
 import { createContract } from "@/services/contractService";
 
+// Tipo auxiliar para alinhar com o ContractBuilder
 type InstallmentWithFee = Omit<Installment, "id" | "contract_id"> & { transaction_fee?: number };
 
 export default function CRM() {
@@ -18,8 +19,6 @@ export default function CRM() {
 
   // Filtros
   const [searchTerm, setSearchTerm] = useState("");
-  const [nationalityFilter, setNationalityFilter] = useState("");
-  const [monthFilter, setMonthFilter] = useState(""); // NOVO ESTADO: Filtro de Mês
 
   // Estado para forçar atualização do Board
   const [refreshTrigger, setRefreshTrigger] = useState(0);
@@ -34,6 +33,7 @@ export default function CRM() {
   const handleSaveContract = async (data: {
     totalValue: number;
     installments: InstallmentWithFee[];
+    // Correção: Omitimos 'status' e 'installment_id' pois ainda não existem nesta etapa
     commissions: Omit<Commission, "id" | "contract_id" | "value" | "installment_id" | "status">[];
   }) => {
     if (!selectedClient) {
@@ -75,6 +75,7 @@ export default function CRM() {
     }
   };
 
+  // Função chamada quando um novo atleta é criado com sucesso
   const handleClientCreated = () => {
     setRefreshTrigger((prev) => prev + 1);
   };
@@ -96,31 +97,10 @@ export default function CRM() {
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Buscar por nome ou clube..."
+            placeholder="Buscar por nome..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-9 bg-background"
-          />
-        </div>
-
-        <div className="relative flex-1 md:max-w-[250px]">
-          <Globe className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Nacionalidade..."
-            value={nationalityFilter}
-            onChange={(e) => setNationalityFilter(e.target.value)}
-            className="pl-9 bg-background"
-          />
-        </div>
-
-        {/* NOVO: Input de Mês */}
-        <div className="relative flex-1 md:max-w-[200px]">
-          <CalendarDays className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            type="month"
-            value={monthFilter}
-            onChange={(e) => setMonthFilter(e.target.value)}
-            className="pl-9 bg-background text-muted-foreground"
           />
         </div>
       </div>
@@ -130,22 +110,19 @@ export default function CRM() {
         key={refreshTrigger}
         onClientMoveToFechado={handleClientMoveToFechado}
         searchTerm={searchTerm}
-        nationalityFilter={nationalityFilter}
-        monthFilter={monthFilter} // Passando o novo filtro
       />
 
       {/* Contract Modal */}
       <Dialog open={isContractModalOpen} onOpenChange={setIsContractModalOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-card border-border p-0 gap-0">
-          <DialogHeader className="p-6 pb-2 border-b border-border/50">
-            <DialogTitle className="text-xl flex items-center gap-2">
-              <span className="w-1 h-6 bg-[#E8BD27] rounded-full inline-block"></span>
-              Novo Contrato
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-xl">
+              <span className="gold-text">Novo Contrato</span>
             </DialogTitle>
           </DialogHeader>
-          <div className="p-6">
+          <div className="p-4">
             <ContractBuilder
-              client={selectedClient ? { id: selectedClient.id, name: selectedClient.name } : undefined}
+              client={selectedClient}
               onSave={handleSaveContract}
               onCancel={() => {
                 setIsContractModalOpen(false);
