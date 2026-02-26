@@ -1,44 +1,48 @@
 
 
-## Plano: Nova página "Clientes Ativos" e simplificação do Financeiro
+## Plano: Aba "Cobranças" na página Gestão de Contratos
 
-### Resumo
-Remover a aba "Contratos" da página Financeiro (manter apenas DRE Gerencial e Despesas) e criar uma nova página dedicada "Clientes Ativos" com UI premium para gestão de contratos, parcelas e comissões.
+### Objetivo
+Adicionar uma aba "Cobranças" na página Gestão de Contratos com uma lista de clientes que possuem parcelas pendentes/vencidas, filtrável por mês.
 
 ### Implementação
 
-**1. Simplificar página Financeiro (`src/pages/Financeiro.tsx`)**
-- Remover aba "Contratos" do TabsList (manter só DRE e Despesas, grid-cols-2)
-- Remover todo o código de contratos: estados (selectedClient, isContractModalOpen, contractProgress, etc.), hooks (useActiveContracts, useCompletedContracts), funções (handleOpenNewContract, handleSelectClient, renderContractCard), dialogs (ClientSelectorDialog, ContractDetailDialog, NewClientForm, ContractBuilder)
-- Remover botão "Novo Contrato" do header
-- Manter apenas: FinancialSummary, ExpensesTable, NewExpenseDialog
+**Arquivo: `src/pages/ClientesAtivos.tsx`**
 
-**2. Criar nova página `src/pages/ClientesAtivos.tsx`**
-- Header com título "Clientes Ativos" + botão "Novo Contrato"
-- KPI cards no topo: Total em Contratos Ativos, Total Recebido, Total Pendente, Contratos Concluídos
-- Lista de clientes com cards expandíveis (accordion-style):
-  - Cada card mostra: avatar, nome, badge ativo/concluído, valor total, barra de progresso
-  - Ao expandir: duas seções lado a lado (ou tabs internas)
-    - **Parcelas**: tabela com vencimento, valor, taxa, status, ação de baixa rápida
-    - **Comissões**: tabela com beneficiário, %, valor, status, ação de pagamento rápido
-- Filtro por status: Todos / Ativos / Concluídos (toggle pills)
-- Busca por nome de cliente
-- Reutilizar `ContractDetailDialog` para edição completa ao clicar "Ver detalhes"
-- Reutilizar `ClientSelectorDialog`, `ContractBuilder`, `NewClientForm` para criação de contratos
+1. **Envolver o conteúdo atual em um sistema de abas de nível superior** (Tabs):
+   - Aba "Contratos" — conteúdo atual (KPIs, filtros, lista de clientes)
+   - Aba "Cobranças" — nova aba
 
-**3. Adicionar rota e sidebar**
-- `src/App.tsx`: nova rota `/clientes-ativos` com `RoleProtectedRoute` admin-only
-- `src/components/layout/AppSidebar.tsx`: novo item "Clientes Ativos" com ícone `UserCheck` entre CRM e Financeiro
+2. **Nova aba "Cobranças"**:
+   - **Filtro de mês**: Select com os meses disponíveis (baseado nos `dueDate` das parcelas pendentes/vencidas), default = mês atual
+   - **KPI cards mini**: Total a cobrar no mês, Quantidade de clientes, Parcelas vencidas (overdue)
+   - **Lista de clientes com parcelas pendentes/vencidas no mês selecionado**:
+     - Cada item mostra: avatar, nome do cliente, escola, quantidade de parcelas pendentes, valor total pendente no mês
+     - Parcelas listadas inline abaixo de cada cliente (sem accordion — direto visível) com: vencimento, valor, status badge (pendente/vencido), botão de baixa rápida
+     - Parcelas vencidas (overdue) com destaque visual em vermelho
+   - Clientes ordenados: vencidos primeiro, depois pendentes
 
-**4. Hook dedicado `src/hooks/useClientContracts.ts`**
-- Query que busca todos os contratos (ativos + concluídos) com join em clients, installments e commissions
-- Agrupa por cliente, calcula totais pagos/pendentes por cliente
-- Retorna dados estruturados para a página
+3. **Dados**: Reutilizar o hook `useClientContracts` já existente — filtrar no frontend as parcelas com status `pending` ou `overdue` cujo `dueDate` cai no mês selecionado.
 
-### Detalhes técnicos
-- Nenhuma alteração de banco de dados necessária - todas as tabelas já existem
-- Accordion usa `@radix-ui/react-collapsible` (já instalado)
-- Barra de progresso com gradiente dourado (#E8BD27) consistente com o design system
-- Ações de baixa rápida (parcela/comissão) reutilizam a mesma lógica do `ContractDetailDialog`
-- `checkAndCompleteContract` do `contractService` continua sendo chamado após cada alteração de status
+4. **UI/UX**:
+   - Tabs no topo da página, estilo consistente com o design system (dourado ativo)
+   - Cards de cobrança com borda lateral colorida (vermelho para vencido, âmbar para pendente)
+   - Botão "Baixar" com ação rápida (reutilizar `quickPayInstallment`)
+   - Empty state quando não há cobranças no mês
+
+### Layout esperado
+```text
+[Contratos]  [Cobranças]
+
+Filtro: [Fevereiro 2026 ▼]
+
+┌─ KPI: R$ 15.000 a cobrar  |  5 clientes  |  2 vencidos ─┐
+
+┌ 🔴 João Silva — Escola X
+│   15/02 — R$ 3.000 — Vencido  [Baixar]
+│   28/02 — R$ 2.000 — Pendente [Baixar]
+
+┌ 🟡 Maria Santos — Escola Y  
+│   20/02 — R$ 5.000 — Pendente [Baixar]
+```
 
