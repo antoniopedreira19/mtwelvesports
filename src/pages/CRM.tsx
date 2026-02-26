@@ -180,7 +180,7 @@ export default function CRM() {
         key={refreshTrigger}
         onClientMoveToFechado={handleClientMoveToFechado}
         searchTerm={searchTerm}
-        
+        monthFilter={monthFilter}
       />
 
       {/* Contract Modal */}
