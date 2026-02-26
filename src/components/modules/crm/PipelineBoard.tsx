@@ -22,6 +22,7 @@ import { supabase } from "@/integrations/supabase/client";
 interface PipelineBoardProps {
   onClientMoveToFechado: (client: Client) => void;
   searchTerm?: string;
+  monthFilter?: string;
 }
 
 const columnColors: Record<PipelineStage, string> = {
@@ -40,7 +41,7 @@ const columnBadgeColors: Record<PipelineStage, string> = {
   perdido: "bg-red-500/10 text-red-400",
 };
 
-export function PipelineBoard({ onClientMoveToFechado, searchTerm = "" }: PipelineBoardProps) {
+export function PipelineBoard({ onClientMoveToFechado, searchTerm = "", monthFilter = "" }: PipelineBoardProps) {
   const { columns, setColumns, updateClientStage, updateClient, deleteClient } = useRealtimeClients();
   
   // View dialog state
@@ -357,7 +358,9 @@ export function PipelineBoard({ onClientMoveToFechado, searchTerm = "" }: Pipeli
         <div className="flex gap-4 overflow-x-auto pb-4">
           {columns.map((column) => {
             const filteredClients = column.clients.filter((client) => {
-              return client.name.toLowerCase().includes(searchTerm.toLowerCase());
+              const matchesSearch = client.name.toLowerCase().includes(searchTerm.toLowerCase());
+              const matchesMonth = !monthFilter || client.created_at.startsWith(monthFilter);
+              return matchesSearch && matchesMonth;
             });
 
             return (
