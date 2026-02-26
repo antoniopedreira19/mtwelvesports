@@ -273,6 +273,22 @@ export function FinancialSummary() {
     return <AlertCircle className="h-3 w-3 text-red-400" />;
   };
 
+  // Cálculo Mês Atual e Mês Anterior — usa TODOS os records (não filtrados)
+  // para que a variação funcione mesmo filtrando um único mês
+  const allMonthTotals = useMemo(() => {
+    const tots: Record<string, { receitas: number; despesas: number; comissoes: number }> = {};
+    records.forEach((record) => {
+      const dateStr = record.date.includes("T") ? record.date : `${record.date}T12:00:00`;
+      const dateObj = new Date(dateStr);
+      const monthKey = format(startOfMonth(dateObj), "yyyy-MM");
+      if (!tots[monthKey]) tots[monthKey] = { receitas: 0, despesas: 0, comissoes: 0 };
+      if (record.direction === "entrada") tots[monthKey].receitas += Number(record.amount);
+      else if (record.type === "comissao") tots[monthKey].comissoes += Number(record.amount);
+      else tots[monthKey].despesas += Number(record.amount);
+    });
+    return tots;
+  }, [records]);
+
   if (isLoading)
     return (
       <div className="flex justify-center py-12">
@@ -293,22 +309,6 @@ export function FinancialSummary() {
   const periodTotalDespesas = displayMonths.reduce((sum, m) => sum + (matrix.despesas.totalByMonth[m] || 0), 0);
   const periodTotalComissoes = displayMonths.reduce((sum, m) => sum + (matrix.comissoes.totalByMonth[m] || 0), 0);
   const periodTotalLucro = periodTotalReceitas - (periodTotalDespesas + periodTotalComissoes);
-
-  // Cálculo Mês Atual e Mês Anterior — usa TODOS os records (não filtrados)
-  // para que a variação funcione mesmo filtrando um único mês
-  const allMonthTotals = useMemo(() => {
-    const totals: Record<string, { receitas: number; despesas: number; comissoes: number }> = {};
-    records.forEach((record) => {
-      const dateStr = record.date.includes("T") ? record.date : `${record.date}T12:00:00`;
-      const dateObj = new Date(dateStr);
-      const monthKey = format(startOfMonth(dateObj), "yyyy-MM");
-      if (!totals[monthKey]) totals[monthKey] = { receitas: 0, despesas: 0, comissoes: 0 };
-      if (record.direction === "entrada") totals[monthKey].receitas += Number(record.amount);
-      else if (record.type === "comissao") totals[monthKey].comissoes += Number(record.amount);
-      else totals[monthKey].despesas += Number(record.amount);
-    });
-    return totals;
-  }, [records]);
 
   const currentMonthKey = format(startOfMonth(new Date()), "yyyy-MM");
   const prevMonthKey = getPrevMonthKey(currentMonthKey);
