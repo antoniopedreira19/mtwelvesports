@@ -1,4 +1,4 @@
-import { LayoutDashboard, Users, Wallet, Settings, LogOut } from "lucide-react";
+import { LayoutDashboard, Users, UserCheck, Wallet, Settings, LogOut } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import {
@@ -31,6 +31,7 @@ export function AppSidebar() {
   const allMenuItems = [
     { title: "Dashboard", url: "/", icon: LayoutDashboard, adminOnly: true },
     { title: "CRM", url: "/crm", icon: Users, adminOnly: false },
+    { title: "Clientes Ativos", url: "/clientes-ativos", icon: UserCheck, adminOnly: true },
     { title: "Financeiro", url: "/financeiro", icon: Wallet, adminOnly: true },
     { title: "Settings", url: "/settings", icon: Settings, adminOnly: true },
   ];
