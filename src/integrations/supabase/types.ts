@@ -17,7 +17,9 @@ export type Database = {
       clients: {
         Row: {
           avatar_url: string | null
+          closed_at: string | null
           created_at: string
+          deal_value: number | null
           email: string | null
           id: string
           lost_reason: string | null
@@ -25,6 +27,7 @@ export type Database = {
           meeting_responsible: string | null
           name: string
           nationality: string | null
+          next_step_notes: string | null
           notes: string | null
           phone: string | null
           school: string | null
@@ -34,7 +37,9 @@ export type Database = {
         }
         Insert: {
           avatar_url?: string | null
+          closed_at?: string | null
           created_at?: string
+          deal_value?: number | null
           email?: string | null
           id?: string
           lost_reason?: string | null
@@ -42,6 +47,7 @@ export type Database = {
           meeting_responsible?: string | null
           name: string
           nationality?: string | null
+          next_step_notes?: string | null
           notes?: string | null
           phone?: string | null
           school?: string | null
@@ -51,7 +57,9 @@ export type Database = {
         }
         Update: {
           avatar_url?: string | null
+          closed_at?: string | null
           created_at?: string
+          deal_value?: number | null
           email?: string | null
           id?: string
           lost_reason?: string | null
@@ -59,6 +67,7 @@ export type Database = {
           meeting_responsible?: string | null
           name?: string
           nationality?: string | null
+          next_step_notes?: string | null
           notes?: string | null
           phone?: string | null
           school?: string | null
@@ -313,7 +322,13 @@ export type Database = {
       app_role: "admin" | "member"
       contract_status: "draft" | "active" | "completed" | "cancelled"
       expense_category: "fixo" | "variavel" | "extra" | "imposto" | "comissao"
-      pipeline_stage: "radar" | "contato" | "negociacao" | "fechado" | "perdido"
+      pipeline_stage:
+        | "radar"
+        | "next_step"
+        | "contato"
+        | "negociacao"
+        | "fechado"
+        | "perdido"
       transaction_status: "pending" | "paid" | "overdue" | "cancelled"
       transaction_type: "income" | "expense"
     }
@@ -446,7 +461,14 @@ export const Constants = {
       app_role: ["admin", "member"],
       contract_status: ["draft", "active", "completed", "cancelled"],
       expense_category: ["fixo", "variavel", "extra", "imposto", "comissao"],
-      pipeline_stage: ["radar", "contato", "negociacao", "fechado", "perdido"],
+      pipeline_stage: [
+        "radar",
+        "next_step",
+        "contato",
+        "negociacao",
+        "fechado",
+        "perdido",
+      ],
       transaction_status: ["pending", "paid", "overdue", "cancelled"],
       transaction_type: ["income", "expense"],
     },
