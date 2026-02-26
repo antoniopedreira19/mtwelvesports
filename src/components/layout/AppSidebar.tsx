@@ -87,45 +87,70 @@ export function AppSidebar() {
         </SidebarMenu>
       </SidebarContent>
 
-      <SidebarFooter className="p-4 border-t border-border/10 space-y-2">
-        {isAdmin && (
-          <SidebarMenuButton
-            asChild
-            tooltip="Settings"
-            isActive={location.pathname === "/settings"}
-            className="hover:bg-white/10 active:bg-white/10 data-[active=true]:bg-[#E8BD27]/20 data-[active=true]:text-[#E8BD27] transition-all duration-200"
-          >
-            <NavLink to="/settings" className="flex items-center gap-3">
-              <Settings className={cn("h-5 w-5", location.pathname === "/settings" ? "text-[#E8BD27]" : "text-muted-foreground")} />
-              <span className="font-medium">Settings</span>
-            </NavLink>
-          </SidebarMenuButton>
-        )}
+      <SidebarFooter className="p-3 border-t border-border/10">
         <div
           className={cn(
             "flex items-center gap-3 rounded-lg p-2 transition-all",
             isCollapsed && "justify-center px-0",
           )}
         >
-          <Avatar className="h-9 w-9 border-2 border-[#E8BD27]/20">
+          <Avatar className="h-9 w-9 border-2 border-[#E8BD27]/20 shrink-0">
             <AvatarFallback>{user?.email?.charAt(0).toUpperCase() || 'U'}</AvatarFallback>
           </Avatar>
 
           {!isCollapsed && (
-            <div className="flex flex-col overflow-hidden animate-in fade-in duration-300 flex-1">
-              <span className="text-sm font-medium text-white truncate">{user?.email}</span>
-            </div>
+            <>
+              <div className="flex flex-col overflow-hidden animate-in fade-in duration-300 flex-1 min-w-0">
+                <span className="text-sm font-medium text-white truncate">{user?.email}</span>
+              </div>
+              <div className="flex items-center gap-1 shrink-0">
+                {isAdmin && (
+                  <NavLink
+                    to="/settings"
+                    className={cn(
+                      "h-8 w-8 rounded-md flex items-center justify-center transition-all hover:bg-white/10",
+                      location.pathname === "/settings" && "bg-[#E8BD27]/20"
+                    )}
+                    title="Settings"
+                  >
+                    <Settings className={cn("h-4 w-4", location.pathname === "/settings" ? "text-[#E8BD27]" : "text-muted-foreground")} />
+                  </NavLink>
+                )}
+                <button
+                  onClick={signOut}
+                  className="h-8 w-8 rounded-md flex items-center justify-center transition-all text-muted-foreground hover:text-white hover:bg-white/10"
+                  title="Sair"
+                >
+                  <LogOut className="h-4 w-4" />
+                </button>
+              </div>
+            </>
           )}
         </div>
-        <Button
-          variant="ghost"
-          size={isCollapsed ? "icon" : "default"}
-          onClick={signOut}
-          className="w-full text-muted-foreground hover:text-white hover:bg-white/10"
-        >
-          <LogOut className="h-4 w-4" />
-          {!isCollapsed && <span className="ml-2">Sair</span>}
-        </Button>
+
+        {isCollapsed && (
+          <div className="flex flex-col items-center gap-1 mt-1">
+            {isAdmin && (
+              <NavLink
+                to="/settings"
+                className={cn(
+                  "h-8 w-8 rounded-md flex items-center justify-center transition-all hover:bg-white/10",
+                  location.pathname === "/settings" && "bg-[#E8BD27]/20"
+                )}
+                title="Settings"
+              >
+                <Settings className={cn("h-4 w-4", location.pathname === "/settings" ? "text-[#E8BD27]" : "text-muted-foreground")} />
+              </NavLink>
+            )}
+            <button
+              onClick={signOut}
+              className="h-8 w-8 rounded-md flex items-center justify-center transition-all text-muted-foreground hover:text-white hover:bg-white/10"
+              title="Sair"
+            >
+              <LogOut className="h-4 w-4" />
+            </button>
+          </div>
+        )}
       </SidebarFooter>
     </Sidebar>
   );
