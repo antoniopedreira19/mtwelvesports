@@ -68,13 +68,17 @@ export function FinancialSummary() {
     comissoes: false,
   });
 
-  // Estado do Modal de Detalhes
+  // Estado do Modal de Detalhes (comissões)
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [selectedCellData, setSelectedCellData] = useState<{
     title: string;
     month: string;
     records: FinancialRecord[];
   } | null>(null);
+
+  // Estado do Modal de Receitas por cliente
+  const [receitasModalOpen, setReceitasModalOpen] = useState(false);
+  const [receitasModalMonth, setReceitasModalMonth] = useState<string | null>(null);
 
   // Datas mínimas e máximas baseadas nos dados
   const [minDate, setMinDate] = useState<Date | undefined>();
@@ -482,19 +486,22 @@ export function FinancialSummary() {
               </TableHeader>
               <TableBody>
                 {/* RECEITAS */}
-                <TableRow
-                  className="cursor-pointer group transition-colors hover:bg-table-row-alt"
-                  onClick={() => toggleRow("receitas")}
-                >
+                <TableRow className="group transition-colors hover:bg-table-row-alt">
                   <TableCell className="w-[220px] min-w-[220px] max-w-[220px] font-bold text-emerald-500 pl-4 sticky left-0 bg-table-row z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.3)] group-hover:bg-table-row-alt transition-colors">
                     <div className="flex items-center gap-2 truncate">
-                      {expandedRows.receitas ? <ChevronDown className="h-4 w-4 shrink-0" /> : <ChevronRight className="h-4 w-4 shrink-0" />}
                       Receitas
                     </div>
                   </TableCell>
                   {displayMonths.map((m) => (
                     <>
-                      <TableCell key={m} className="text-right font-bold text-emerald-500/80">
+                      <TableCell
+                        key={m}
+                        className="text-right font-bold text-emerald-500/80 cursor-pointer hover:bg-emerald-500/10 transition-colors"
+                        onClick={() => {
+                          setReceitasModalMonth(m);
+                          setReceitasModalOpen(true);
+                        }}
+                      >
                         {formatCurrency(matrix.receitas.totalByMonth[m] || 0)}
                       </TableCell>
                       <VariationCell
@@ -506,31 +513,6 @@ export function FinancialSummary() {
                     </>
                   ))}
                 </TableRow>
-                {expandedRows.receitas &&
-                  getActiveItems(matrix.receitas.items).map((title) => (
-                    <TableRow key={title} className="bg-table-row-alt text-sm hover:bg-secondary transition-colors">
-                      <TableCell className="w-[220px] min-w-[220px] max-w-[220px] pl-10 text-muted-foreground sticky left-0 bg-table-row-alt z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.3)] hover:bg-secondary">
-                        <div className="flex items-center gap-2 truncate">
-                          <div className="w-1 h-1 rounded-full bg-emerald-500/50 shrink-0" /> {title}
-                        </div>
-                      </TableCell>
-                      {displayMonths.map((m) => (
-                        <>
-                          <TableCell key={m} className="text-right">
-                            {matrix.receitas.items[title][m] ? (
-                              <div className="flex items-center justify-end gap-2">
-                                <span>{formatCurrency(matrix.receitas.items[title][m].amount)}</span>
-                                <StatusIcon statuses={matrix.receitas.items[title][m].status} />
-                              </div>
-                            ) : (
-                              <span className="text-muted-foreground/20">-</span>
-                            )}
-                          </TableCell>
-                          <TableCell className="border-l border-dashed border-border/30"></TableCell>
-                        </>
-                      ))}
-                    </TableRow>
-                  ))}
 
                 {/* COMISSÕES */}
                 <TableRow
@@ -671,6 +653,74 @@ export function FinancialSummary() {
           </div>
         </CardContent>
       </Card>
+
+      {/* MODAL DE RECEITAS POR CLIENTE */}
+      {receitasModalOpen && receitasModalMonth && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div
+            className="absolute inset-0 bg-background/60 backdrop-blur-sm"
+            onClick={() => setReceitasModalOpen(false)}
+          />
+          <div className="relative z-10 w-full max-w-lg mx-4 bg-card border border-border rounded-xl shadow-2xl overflow-hidden">
+            <div className="flex items-center justify-between p-5 border-b border-border/50">
+              <h3 className="text-lg font-bold flex items-center gap-2">
+                <span className="w-1 h-5 bg-emerald-500 rounded-full inline-block" />
+                Receitas — {getMonthLabel(receitasModalMonth)}
+              </h3>
+              <button
+                onClick={() => setReceitasModalOpen(false)}
+                className="text-muted-foreground hover:text-foreground transition-colors text-xl leading-none"
+              >
+                ×
+              </button>
+            </div>
+            <div className="p-0 max-h-[60vh] overflow-y-auto">
+              {(() => {
+                const items = matrix.receitas.items;
+                const activeItems = getActiveItems(items).filter(
+                  (title) => items[title][receitasModalMonth] && items[title][receitasModalMonth].amount > 0
+                );
+                if (activeItems.length === 0) {
+                  return (
+                    <div className="p-8 text-center text-muted-foreground">
+                      Nenhuma receita neste mês.
+                    </div>
+                  );
+                }
+                return activeItems.map((title, idx) => {
+                  const cell = items[title][receitasModalMonth];
+                  return (
+                    <div
+                      key={title}
+                      className={cn(
+                        "flex items-center justify-between px-5 py-3.5",
+                        idx < activeItems.length - 1 && "border-b border-border/30"
+                      )}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/60" />
+                        <span className="text-sm font-medium">{title}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-semibold text-emerald-500">
+                          {formatCurrency(cell.amount)}
+                        </span>
+                        <StatusIcon statuses={cell.status} />
+                      </div>
+                    </div>
+                  );
+                });
+              })()}
+            </div>
+            <div className="p-4 border-t border-border/50 flex justify-between items-center bg-muted/30">
+              <span className="text-sm text-muted-foreground font-medium">Total</span>
+              <span className="text-base font-bold text-emerald-500">
+                {formatCurrency(matrix.receitas.totalByMonth[receitasModalMonth] || 0)}
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* MODAL DE DETALHES DA COMISSÃO */}
       {detailModalOpen && selectedCellData && (
