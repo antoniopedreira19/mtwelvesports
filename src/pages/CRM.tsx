@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Search, Globe, CalendarDays, ChevronLeft, ChevronRight, X } from "lucide-react";
+import { Search, CalendarDays, ChevronLeft, ChevronRight, X } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { PipelineBoard } from "@/components/modules/crm/PipelineBoard";
@@ -16,7 +16,6 @@ import { cn } from "@/lib/utils";
 
 type InstallmentWithFee = Omit<Installment, "id" | "contract_id"> & { transaction_fee?: number };
 
-// Array fixo para a UI do seletor de meses
 const MONTHS_PT = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
 
 export default function CRM() {
@@ -24,16 +23,14 @@ export default function CRM() {
   const [selectedClient, setSelectedClient] = useState<Client | undefined>();
   const [isLoading, setIsLoading] = useState(false);
 
-  // Filtros
+  // Filtros (Apenas Busca e Mês)
   const [searchTerm, setSearchTerm] = useState("");
-  const [nationalityFilter, setNationalityFilter] = useState("");
-  const [monthFilter, setMonthFilter] = useState(""); // Filtro de Mês ("YYYY-MM")
+  const [monthFilter, setMonthFilter] = useState("");
 
-  // Estados exclusivos do Popover de Mês
+  // Estados do Popover de Mês
   const [isMonthPickerOpen, setIsMonthPickerOpen] = useState(false);
   const [pickerYear, setPickerYear] = useState(new Date().getFullYear());
 
-  // Estado para forçar atualização do Board
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   const { toast } = useToast();
@@ -49,11 +46,7 @@ export default function CRM() {
     commissions: Omit<Commission, "id" | "contract_id" | "value" | "installment_id" | "status">[];
   }) => {
     if (!selectedClient) {
-      toast({
-        title: "Erro",
-        description: "Nenhum cliente selecionado.",
-        variant: "destructive",
-      });
+      toast({ title: "Erro", description: "Nenhum cliente selecionado.", variant: "destructive" });
       return;
     }
 
@@ -67,21 +60,13 @@ export default function CRM() {
         commissions: data.commissions,
       });
 
-      toast({
-        title: "Contrato Salvo!",
-        description: `Contrato de ${selectedClient.name} cadastrado com sucesso.`,
-      });
-
+      toast({ title: "Contrato Salvo!", description: `Contrato de ${selectedClient.name} cadastrado com sucesso.` });
       setIsContractModalOpen(false);
       setSelectedClient(undefined);
       setRefreshTrigger((prev) => prev + 1);
     } catch (error) {
       console.error("Erro ao salvar contrato:", error);
-      toast({
-        title: "Erro ao salvar contrato",
-        description: "Ocorreu um erro ao cadastrar o contrato. Tente novamente.",
-        variant: "destructive",
-      });
+      toast({ title: "Erro", description: "Ocorreu um erro ao cadastrar o contrato.", variant: "destructive" });
     } finally {
       setIsLoading(false);
     }
@@ -91,7 +76,6 @@ export default function CRM() {
     setRefreshTrigger((prev) => prev + 1);
   };
 
-  // Helper para mostrar o mês selecionado no botão
   const getDisplayMonth = () => {
     if (!monthFilter) return "Mês de entrada";
     const [year, month] = monthFilter.split("-");
@@ -108,11 +92,10 @@ export default function CRM() {
           <h1 className="text-3xl font-bold tracking-tight">CRM</h1>
           <p className="text-muted-foreground mt-1">Gerencie seu pipeline de atletas</p>
         </div>
-
         <NewClientDialog onSuccess={handleClientCreated} />
       </div>
 
-      {/* Barra de Filtros */}
+      {/* Barra de Filtros (Limpa) */}
       <div className="flex flex-col md:flex-row gap-4 bg-card p-4 rounded-xl border border-border/50 shadow-sm">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -120,16 +103,6 @@ export default function CRM() {
             placeholder="Buscar por nome ou clube..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-9 bg-background h-10"
-          />
-        </div>
-
-        <div className="relative flex-1 md:max-w-[250px]">
-          <Globe className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Nacionalidade..."
-            value={nationalityFilter}
-            onChange={(e) => setNationalityFilter(e.target.value)}
             className="pl-9 bg-background h-10"
           />
         </div>
@@ -154,7 +127,7 @@ export default function CRM() {
                     className="ml-2 p-0.5 rounded-full hover:bg-muted transition-colors"
                     onClick={(e) => {
                       e.stopPropagation();
-                      setMonthFilter(""); // Limpa o filtro
+                      setMonthFilter("");
                     }}
                   >
                     <X className="h-3.5 w-3.5 opacity-70 hover:opacity-100 text-red-400" />
@@ -189,7 +162,7 @@ export default function CRM() {
                       )}
                       onClick={() => {
                         setMonthFilter(monthValue);
-                        setIsMonthPickerOpen(false); // Fecha o popover ao selecionar
+                        setIsMonthPickerOpen(false);
                       }}
                     >
                       {month}
@@ -207,7 +180,6 @@ export default function CRM() {
         key={refreshTrigger}
         onClientMoveToFechado={handleClientMoveToFechado}
         searchTerm={searchTerm}
-        nationalityFilter={nationalityFilter}
         monthFilter={monthFilter}
       />
 
