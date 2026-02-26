@@ -294,18 +294,33 @@ export function FinancialSummary() {
   const periodTotalComissoes = displayMonths.reduce((sum, m) => sum + (matrix.comissoes.totalByMonth[m] || 0), 0);
   const periodTotalLucro = periodTotalReceitas - (periodTotalDespesas + periodTotalComissoes);
 
-  // Cálculo Mês Atual e Mês Anterior
+  // Cálculo Mês Atual e Mês Anterior — usa TODOS os records (não filtrados)
+  // para que a variação funcione mesmo filtrando um único mês
+  const allMonthTotals = useMemo(() => {
+    const totals: Record<string, { receitas: number; despesas: number; comissoes: number }> = {};
+    records.forEach((record) => {
+      const dateStr = record.date.includes("T") ? record.date : `${record.date}T12:00:00`;
+      const dateObj = new Date(dateStr);
+      const monthKey = format(startOfMonth(dateObj), "yyyy-MM");
+      if (!totals[monthKey]) totals[monthKey] = { receitas: 0, despesas: 0, comissoes: 0 };
+      if (record.direction === "entrada") totals[monthKey].receitas += Number(record.amount);
+      else if (record.type === "comissao") totals[monthKey].comissoes += Number(record.amount);
+      else totals[monthKey].despesas += Number(record.amount);
+    });
+    return totals;
+  }, [records]);
+
   const currentMonthKey = format(startOfMonth(new Date()), "yyyy-MM");
   const prevMonthKey = getPrevMonthKey(currentMonthKey);
 
-  const currentMonthReceitas = matrix.receitas.totalByMonth[currentMonthKey] || 0;
-  const prevMonthReceitas = matrix.receitas.totalByMonth[prevMonthKey] || 0;
+  const currentMonthReceitas = allMonthTotals[currentMonthKey]?.receitas || 0;
+  const prevMonthReceitas = allMonthTotals[prevMonthKey]?.receitas || 0;
   const receitasVariation = calculateVariation(currentMonthReceitas, prevMonthReceitas);
 
   const currentMonthDespesas =
-    (matrix.despesas.totalByMonth[currentMonthKey] || 0) + (matrix.comissoes.totalByMonth[currentMonthKey] || 0);
+    (allMonthTotals[currentMonthKey]?.despesas || 0) + (allMonthTotals[currentMonthKey]?.comissoes || 0);
   const prevMonthDespesas =
-    (matrix.despesas.totalByMonth[prevMonthKey] || 0) + (matrix.comissoes.totalByMonth[prevMonthKey] || 0);
+    (allMonthTotals[prevMonthKey]?.despesas || 0) + (allMonthTotals[prevMonthKey]?.comissoes || 0);
   const despesasVariation = calculateVariation(currentMonthDespesas, prevMonthDespesas);
 
   const currentMonthResultado = currentMonthReceitas - currentMonthDespesas;
@@ -444,15 +459,15 @@ export function FinancialSummary() {
         </CardHeader>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
-            <Table className="relative">
+            <Table className="relative w-full table-fixed">
               <TableHeader className="sticky top-0 z-30">
                 <TableRow className="bg-table-header">
-                  <TableHead className="w-[200px] font-bold text-primary pl-6 sticky left-0 bg-table-header z-40 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.3)]">
+                  <TableHead className="w-[280px] font-bold text-primary pl-6 sticky left-0 bg-table-header z-40 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.3)]">
                     Item
                   </TableHead>
                   {displayMonths.map((m) => (
                     <>
-                      <TableHead key={m} className="text-right min-w-[110px] font-semibold bg-table-header">
+                      <TableHead key={m} className="text-right font-semibold bg-table-header">
                         {getMonthLabel(m)}
                       </TableHead>
                       <TableHead
