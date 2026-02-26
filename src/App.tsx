@@ -9,7 +9,7 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { RoleProtectedRoute } from "@/components/RoleProtectedRoute";
 import Dashboard from "./pages/Dashboard";
 import CRM from "./pages/CRM";
-import ClientesAtivos from "./pages/ClientesAtivos";
+import GestaoContratos from "./pages/ClientesAtivos";
 import Financeiro from "./pages/Financeiro";
 import Settings from "./pages/Settings";
 import Auth from "./pages/Auth";
@@ -37,7 +37,7 @@ const App = () => (
                 }
               />
               <Route
-                path="/financeiro"
+                path="/dre"
                 element={
                   <RoleProtectedRoute allowedRoles={["admin"]}>
                     <Financeiro />
@@ -53,10 +53,10 @@ const App = () => (
                 }
               />
               <Route
-                path="/clientes-ativos"
+                path="/gestao-contratos"
                 element={
                   <RoleProtectedRoute allowedRoles={["admin"]}>
-                    <ClientesAtivos />
+                    <GestaoContratos />
                   </RoleProtectedRoute>
                 }
               />

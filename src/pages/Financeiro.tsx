@@ -17,7 +17,7 @@ export default function Financeiro() {
     <div className="flex flex-col space-y-6 animate-fade-in w-full">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Financeiro</h1>
+          <h1 className="text-3xl font-bold tracking-tight">DRE</h1>
           <p className="text-muted-foreground mt-1">DRE Gerencial e controle de despesas.</p>
         </div>
         <div className="flex items-center gap-3">

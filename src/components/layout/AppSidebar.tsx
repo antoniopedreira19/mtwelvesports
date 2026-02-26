@@ -28,16 +28,14 @@ export function AppSidebar() {
     "https://ychhgfsavlnoyjvfpdxa.supabase.co/storage/v1/object/public/logos&templates/image-removebg-preview%20(2).png";
 
   // Menu items based on role
-  const allMenuItems = [
+  const mainMenuItems = [
     { title: "Dashboard", url: "/", icon: LayoutDashboard, adminOnly: true },
     { title: "CRM", url: "/crm", icon: Users, adminOnly: false },
-    { title: "Clientes Ativos", url: "/clientes-ativos", icon: UserCheck, adminOnly: true },
-    { title: "Financeiro", url: "/financeiro", icon: Wallet, adminOnly: true },
-    { title: "Settings", url: "/settings", icon: Settings, adminOnly: true },
+    { title: "Gestão de Contratos", url: "/gestao-contratos", icon: UserCheck, adminOnly: true },
+    { title: "DRE", url: "/dre", icon: Wallet, adminOnly: true },
   ];
 
-  // Filter menu items based on role
-  const menuItems = allMenuItems.filter((item) => !item.adminOnly || isAdmin);
+  const menuItems = mainMenuItems.filter((item) => !item.adminOnly || isAdmin);
 
   return (
     <Sidebar collapsible="icon" className="border-r border-border/50 bg-black text-white">
@@ -89,7 +87,20 @@ export function AppSidebar() {
         </SidebarMenu>
       </SidebarContent>
 
-      <SidebarFooter className="p-4 border-t border-border/10">
+      <SidebarFooter className="p-4 border-t border-border/10 space-y-2">
+        {isAdmin && (
+          <SidebarMenuButton
+            asChild
+            tooltip="Settings"
+            isActive={location.pathname === "/settings"}
+            className="hover:bg-white/10 active:bg-white/10 data-[active=true]:bg-[#E8BD27]/20 data-[active=true]:text-[#E8BD27] transition-all duration-200"
+          >
+            <NavLink to="/settings" className="flex items-center gap-3">
+              <Settings className={cn("h-5 w-5", location.pathname === "/settings" ? "text-[#E8BD27]" : "text-muted-foreground")} />
+              <span className="font-medium">Settings</span>
+            </NavLink>
+          </SidebarMenuButton>
+        )}
         <div
           className={cn(
             "flex items-center gap-3 rounded-lg p-2 transition-all",
