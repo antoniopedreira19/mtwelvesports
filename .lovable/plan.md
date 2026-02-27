@@ -1,33 +1,28 @@
 
 
-## Plano: Adicionar botão "Adicionar Parcela" no dialog de edição de contrato
+## Plano: UI/UX Premium para destaque da Matriz DRE
 
-### Problema
-O `ContractDetailDialog` (dialog de editar contrato) não possui botão para adicionar novas parcelas. Só existe essa funcionalidade no `ContractBuilder` (criação de contrato).
+### Mudanças no arquivo `src/components/modules/financial/FinancialSummary.tsx`
 
-### Implementação
+**1. Cards KPI mais compactos** (linhas 344-448)
+- Reduzir padding dos cards (`p-3` em vez de `p-4`)
+- Diminuir tamanho do valor principal (`text-lg` em vez de `text-xl`)
+- Manter toda a informação, apenas mais condensado para dar espaço visual à matriz
 
-**Arquivo: `src/components/modules/financial/ContractDetailDialog.tsx`**
+**2. Matriz DRE com destaque premium** (linhas 450-655)
+- Remover o wrapper `Card` da matriz e usar um container customizado com gradiente sutil de borda
+- Adicionar um header mais imponente com título maior (`text-xl font-bold`), um ícone decorativo e uma linha de gradiente colorida no topo (emerald → yellow → red representando receita → resultado → despesa)
+- Aplicar `rounded-2xl` com `ring-1 ring-border/30` e `shadow-lg` para elevação visual
+- Adicionar padding interno mais generoso
+- Linha de RESULTADO com background gradiente sutil (do amarelo dourado) para destaque visual
+- Espaçamento maior entre cards e matriz (`space-y-8` em vez de `space-y-6`)
+- Linhas da tabela com hover mais pronunciado e transição suave
+- Coluna "Item" com tipografia mais forte nas categorias principais
 
-1. **Criar função `addNewInstallment`** que:
-   - Calcula a próxima data de vencimento (+1 mês da última parcela existente)
-   - Usa a taxa padrão da última parcela existente (ou 0)
-   - Insere a nova parcela no Supabase com `contract_id`, `value: 0`, `status: "pending"`, `due_date` e `transaction_fee`
-   - Cria comissões vinculadas (se houver comissões no contrato, replica os mesmos beneficiários/percentuais)
-   - Atualiza o `total_value` do contrato e o `installments_count`
-   - Faz optimistic update no estado local e recarrega os dados
+**3. Barra de gradiente decorativa no topo da matriz**
+- Div com `h-1 bg-gradient-to-r from-emerald-500 via-yellow-500 to-red-500 rounded-t-2xl`
+- Reforça visualmente o conceito de DRE (receita → resultado → despesa)
 
-2. **Adicionar botão "Adicionar Parcela"** após o `</Table>` (depois da linha ~578), dentro da tab de parcelas:
-   - Botão com estilo `variant="outline"`, `border-dashed`, ícone `Plus`
-   - Texto: "Adicionar Parcela"
-   - Ao clicar, chama `addNewInstallment`
-
-3. **Após inserir**, entra automaticamente em modo de edição da nova parcela para o usuário ajustar valor, data e taxa.
-
-### Detalhes técnicos
-- Insert no Supabase: tabela `installments` com `contract_id`, `value`, `due_date`, `status`, `transaction_fee`
-- Update no Supabase: tabela `contracts` campo `total_value` (soma de todas parcelas) e `installments_count`
-- Criar comissões vinculadas na tabela `commissions` para cada beneficiário existente no contrato
-- Importar `Plus` de `lucide-react` (já importado? verificar) — não está importado, adicionar
-- Importar `addMonths` de `date-fns` — não está importado, adicionar
+### Resultado esperado
+Cards compactos na parte superior como resumo rápido, e a Matriz DRE ocupando o papel principal da página com aparência de dashboard premium, borda decorativa e elevação visual.
 
