@@ -13,7 +13,7 @@ interface PaymentConfirmDialogProps {
   installment: {
     id: string;
     value: number;
-    dueDate: string;
+    paymentDate: string;
     contractId: string;
     transactionFee?: number;
   } | null;
@@ -99,8 +99,8 @@ export function PaymentConfirmDialog({
           {/* Original info */}
           <div className="flex items-center justify-between p-3 rounded-lg bg-muted/40 border border-border/30">
             <div>
-              <p className="text-[11px] text-muted-foreground uppercase tracking-wider font-medium">Vencimento</p>
-              <p className="text-sm font-semibold mt-0.5">{formatDate(installment.dueDate)}</p>
+              <p className="text-[11px] text-muted-foreground uppercase tracking-wider font-medium">Data Pagamento</p>
+              <p className="text-sm font-semibold mt-0.5">{formatDate(installment.paymentDate)}</p>
             </div>
             <div className="text-right">
               <p className="text-[11px] text-muted-foreground uppercase tracking-wider font-medium">Valor Original</p>

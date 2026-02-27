@@ -22,6 +22,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
@@ -45,10 +46,12 @@ export function ContractDetailDialog({ contractId, open, onOpenChange, onContrac
   const [isLoading, setIsLoading] = useState(true);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
-  // Busca funcionários para o select de beneficiário
+  // Due day editing
+  const [editingDueDay, setEditingDueDay] = useState(false);
+  const [dueDayValue, setDueDayValue] = useState<string>("20");
+
   const { data: employees = [] } = useEmployees();
 
-  // Estados de Edição
   const [editingInstallmentId, setEditingInstallmentId] = useState<string | null>(null);
   const [editInstallmentForm, setEditInstallmentForm] = useState<any>({});
 
@@ -72,27 +75,28 @@ export function ContractDetailDialog({ contractId, open, onOpenChange, onContrac
 
       if (contractError) throw contractError;
       setContract(contractData);
+      setDueDayValue(String(contractData.due_day || 20));
 
       const { data: instData, error: instError } = await supabase
         .from("installments")
         .select("*")
         .eq("contract_id", contractId)
-        .order("due_date", { ascending: true });
+        .order("payment_date", { ascending: true });
 
       if (instError) throw instError;
       setInstallments(instData || []);
 
       const { data: commData, error: commError } = await supabase
         .from("commissions")
-        .select(`*, installments (due_date)`)
+        .select(`*, installments (payment_date)`)
         .eq("contract_id", contractId)
         .order("created_at", { ascending: true });
 
       if (commError) throw commError;
 
       const sortedCommissions = (commData || []).sort((a: any, b: any) => {
-        const dateA = a.installments?.due_date || a.created_at;
-        const dateB = b.installments?.due_date || b.created_at;
+        const dateA = a.installments?.payment_date || a.created_at;
+        const dateB = b.installments?.payment_date || b.created_at;
         return dateA > dateB ? 1 : -1;
       });
 
@@ -109,7 +113,7 @@ export function ContractDetailDialog({ contractId, open, onOpenChange, onContrac
     const groupsMap = new Map<string, { label: string; dateVal: number; items: any[] }>();
 
     commissions.forEach((comm) => {
-      const dateStr = comm.installments?.due_date || comm.created_at || new Date().toISOString();
+      const dateStr = comm.installments?.payment_date || comm.created_at || new Date().toISOString();
       const dateObj = new Date(dateStr.includes("T") ? dateStr : dateStr + "T12:00:00");
 
       const key = format(dateObj, "yyyy-MM");
@@ -130,10 +134,8 @@ export function ContractDetailDialog({ contractId, open, onOpenChange, onContrac
   }, [commissions]);
 
   const quickPayInstallment = async (id: string) => {
-    // Guarda estado anterior para rollback
     const previousInstallments = [...installments];
     
-    // Optimistic update
     setInstallments((prev) =>
       prev.map((inst) => (inst.id === id ? { ...inst, status: "paid" } : inst))
     );
@@ -142,23 +144,19 @@ export function ContractDetailDialog({ contractId, open, onOpenChange, onContrac
       const { error } = await supabase.from("installments").update({ status: "paid" }).eq("id", id);
       if (error) throw error;
 
-      // Verifica se o contrato foi concluído
       await checkAndCompleteContract(contractId!);
 
       toast.success("Parcela recebida!");
       if (onContractUpdated) onContractUpdated();
     } catch (e) {
-      // Rollback em caso de erro
       setInstallments(previousInstallments);
       toast.error("Erro ao baixar parcela.");
     }
   };
 
   const quickPayCommission = async (id: string) => {
-    // Guarda estado anterior para rollback
     const previousCommissions = [...commissions];
     
-    // Optimistic update
     setCommissions((prev) =>
       prev.map((comm) => (comm.id === id ? { ...comm, status: "paid" } : comm))
     );
@@ -167,13 +165,11 @@ export function ContractDetailDialog({ contractId, open, onOpenChange, onContrac
       const { error } = await supabase.from("commissions").update({ status: "paid" }).eq("id", id);
       if (error) throw error;
 
-      // Verifica se o contrato foi concluído
       await checkAndCompleteContract(contractId!);
 
       toast.success("Comissão paga!");
       if (onContractUpdated) onContractUpdated();
     } catch (e) {
-      // Rollback em caso de erro
       setCommissions(previousCommissions);
       toast.error("Erro ao pagar comissão.");
     }
@@ -181,17 +177,16 @@ export function ContractDetailDialog({ contractId, open, onOpenChange, onContrac
 
   const startEditingInstallment = (inst: any) => {
     setEditingInstallmentId(inst.id);
-    const dateObj = new Date(inst.due_date.includes("T") ? inst.due_date : inst.due_date + "T12:00:00");
+    const dateObj = new Date(inst.payment_date.includes("T") ? inst.payment_date : inst.payment_date + "T12:00:00");
     setEditInstallmentForm({
       value: inst.value,
-      due_date: dateObj,
+      payment_date: dateObj,
       status: inst.status,
       transaction_fee: inst.transaction_fee || 0,
     });
   };
 
   const saveInstallment = async (id: string) => {
-    // Guarda estado anterior para rollback
     const previousInstallments = [...installments];
     const previousCommissions = [...commissions];
     const previousContract = { ...contract };
@@ -199,35 +194,31 @@ export function ContractDetailDialog({ contractId, open, onOpenChange, onContrac
     const newVal = Number(editInstallmentForm.value);
     const newFee = Number(editInstallmentForm.transaction_fee);
     const netVal = Math.max(0, newVal - newFee);
-    const formattedDate = format(editInstallmentForm.due_date, "yyyy-MM-dd");
+    const formattedDate = format(editInstallmentForm.payment_date, "yyyy-MM-dd");
 
-    // Detecta diferença de meses na data para propagar às parcelas seguintes
     const editedInst = installments.find((i) => i.id === id);
-    const oldDate = editedInst ? new Date(editedInst.due_date.includes("T") ? editedInst.due_date : editedInst.due_date + "T12:00:00") : null;
-    const newDate = editInstallmentForm.due_date;
+    const oldDate = editedInst ? new Date(editedInst.payment_date.includes("T") ? editedInst.payment_date : editedInst.payment_date + "T12:00:00") : null;
+    const newDate = editInstallmentForm.payment_date;
     let monthDiff = 0;
     if (oldDate && newDate) {
       monthDiff = (newDate.getFullYear() - oldDate.getFullYear()) * 12 + (newDate.getMonth() - oldDate.getMonth());
     }
 
-    // Calcula novas datas para parcelas posteriores
     const editedIndex = installments.findIndex((i) => i.id === id);
     const shiftedInstallments = installments.map((inst, idx) => {
       if (inst.id === id) {
-        return { ...inst, value: newVal, due_date: formattedDate, status: editInstallmentForm.status, transaction_fee: newFee };
+        return { ...inst, value: newVal, payment_date: formattedDate, status: editInstallmentForm.status, transaction_fee: newFee };
       }
       if (monthDiff !== 0 && idx > editedIndex) {
-        const origDate = new Date(inst.due_date.includes("T") ? inst.due_date : inst.due_date + "T12:00:00");
+        const origDate = new Date(inst.payment_date.includes("T") ? inst.payment_date : inst.payment_date + "T12:00:00");
         origDate.setMonth(origDate.getMonth() + monthDiff);
-        return { ...inst, due_date: format(origDate, "yyyy-MM-dd") };
+        return { ...inst, payment_date: format(origDate, "yyyy-MM-dd") };
       }
       return inst;
     });
 
-    // Optimistic update
     setInstallments(shiftedInstallments);
 
-    // Optimistic update para comissões vinculadas
     setCommissions((prev) =>
       prev.map((comm) => {
         if (comm.installment_id === id) {
@@ -238,18 +229,16 @@ export function ContractDetailDialog({ contractId, open, onOpenChange, onContrac
       })
     );
 
-    // Calcula novo total otimisticamente
     const newTotal = shiftedInstallments.reduce((acc, curr) => acc + Number(curr.value), 0);
     setContract((prev: any) => ({ ...prev, total_value: newTotal }));
     setEditingInstallmentId(null);
 
     try {
-      // Atualiza a parcela editada
       const { error: instError } = await supabase
         .from("installments")
         .update({
           value: newVal,
-          due_date: formattedDate,
+          payment_date: formattedDate,
           status: editInstallmentForm.status,
           transaction_fee: newFee,
         })
@@ -257,18 +246,16 @@ export function ContractDetailDialog({ contractId, open, onOpenChange, onContrac
 
       if (instError) throw instError;
 
-      // Propaga mudança de data às parcelas posteriores
       if (monthDiff !== 0) {
         for (let idx = editedIndex + 1; idx < installments.length; idx++) {
           const inst = installments[idx];
-          const origDate = new Date(inst.due_date.includes("T") ? inst.due_date : inst.due_date + "T12:00:00");
+          const origDate = new Date(inst.payment_date.includes("T") ? inst.payment_date : inst.payment_date + "T12:00:00");
           origDate.setMonth(origDate.getMonth() + monthDiff);
-          const newDueDate = format(origDate, "yyyy-MM-dd");
-          await supabase.from("installments").update({ due_date: newDueDate }).eq("id", inst.id);
+          const newPaymentDate = format(origDate, "yyyy-MM-dd");
+          await supabase.from("installments").update({ payment_date: newPaymentDate }).eq("id", inst.id);
         }
       }
 
-      // Atualiza comissões no servidor
       const { data: linkedCommissions } = await supabase
         .from("commissions")
         .select("id, percentage")
@@ -281,20 +268,17 @@ export function ContractDetailDialog({ contractId, open, onOpenChange, onContrac
         }
       }
 
-      // Atualiza total do contrato no servidor
       const { data: all } = await supabase.from("installments").select("value").eq("contract_id", contractId);
       if (all) {
         const serverTotal = all.reduce((acc, curr) => acc + Number(curr.value), 0);
         await supabase.from("contracts").update({ total_value: serverTotal }).eq("id", contractId);
       }
 
-      // Verifica se o contrato foi concluído
       await checkAndCompleteContract(contractId!);
 
       toast.success(monthDiff !== 0 ? "Parcela e datas seguintes atualizadas!" : "Parcela e comissões atualizadas!");
       if (onContractUpdated) onContractUpdated();
     } catch (error) {
-      // Rollback em caso de erro
       setInstallments(previousInstallments);
       setCommissions(previousCommissions);
       setContract(previousContract);
@@ -313,7 +297,6 @@ export function ContractDetailDialog({ contractId, open, onOpenChange, onContrac
   };
 
   const saveCommission = async (id: string) => {
-    // Guarda estado anterior para rollback
     const previousCommissions = [...commissions];
 
     const updatedData = {
@@ -323,7 +306,6 @@ export function ContractDetailDialog({ contractId, open, onOpenChange, onContrac
       status: editCommissionForm.status,
     };
 
-    // Optimistic update
     setCommissions((prev) =>
       prev.map((comm) => (comm.id === id ? { ...comm, ...updatedData } : comm))
     );
@@ -333,16 +315,29 @@ export function ContractDetailDialog({ contractId, open, onOpenChange, onContrac
       const { error } = await supabase.from("commissions").update(updatedData).eq("id", id);
       if (error) throw error;
 
-      // Verifica se o contrato foi concluído
       await checkAndCompleteContract(contractId!);
 
       toast.success("Comissão atualizada!");
       if (onContractUpdated) onContractUpdated();
     } catch (error) {
-      // Rollback em caso de erro
       setCommissions(previousCommissions);
       setEditingCommissionId(id);
       toast.error("Erro ao salvar comissão.");
+    }
+  };
+
+  const saveDueDay = async () => {
+    const val = Math.min(31, Math.max(1, Number(dueDayValue) || 20));
+    setDueDayValue(String(val));
+    try {
+      const { error } = await supabase.from("contracts").update({ due_day: val }).eq("id", contractId);
+      if (error) throw error;
+      setContract((prev: any) => ({ ...prev, due_day: val }));
+      setEditingDueDay(false);
+      toast.success("Dia de vencimento atualizado!");
+      if (onContractUpdated) onContractUpdated();
+    } catch {
+      toast.error("Erro ao atualizar dia de vencimento.");
     }
   };
 
@@ -362,22 +357,20 @@ export function ContractDetailDialog({ contractId, open, onOpenChange, onContrac
     if (!contractId) return;
 
     try {
-      // Calcula próxima data (+1 mês da última parcela)
       const lastInst = installments[installments.length - 1];
       const lastDate = lastInst
-        ? new Date(lastInst.due_date.includes("T") ? lastInst.due_date : lastInst.due_date + "T12:00:00")
+        ? new Date(lastInst.payment_date.includes("T") ? lastInst.payment_date : lastInst.payment_date + "T12:00:00")
         : new Date();
       const nextDate = addMonths(lastDate, 1);
-      const dueDateStr = format(nextDate, "yyyy-MM-dd");
+      const paymentDateStr = format(nextDate, "yyyy-MM-dd");
       const fee = lastInst ? Number(lastInst.transaction_fee || 0) : 0;
 
-      // 1. Inserir parcela no Supabase
       const { data: newInst, error: instError } = await supabase
         .from("installments")
         .insert({
           contract_id: contractId,
           value: 0,
-          due_date: dueDateStr,
+          payment_date: paymentDateStr,
           status: "pending" as const,
           transaction_fee: fee,
         })
@@ -386,7 +379,6 @@ export function ContractDetailDialog({ contractId, open, onOpenChange, onContrac
 
       if (instError || !newInst) throw instError || new Error("Erro ao criar parcela");
 
-      // 2. Criar comissões vinculadas (replica beneficiários únicos do contrato)
       const uniqueCommissions = new Map<string, { employee_name: string; percentage: number }>();
       commissions.forEach((c) => {
         if (!uniqueCommissions.has(c.employee_name)) {
@@ -396,7 +388,7 @@ export function ContractDetailDialog({ contractId, open, onOpenChange, onContrac
 
       const newCommissions: any[] = [];
       for (const [, comm] of uniqueCommissions) {
-        const netValue = Math.max(0, 0 - fee); // value is 0
+        const netValue = Math.max(0, 0 - fee);
         const commValue = (netValue * comm.percentage) / 100;
         const { data: newComm } = await supabase
           .from("commissions")
@@ -408,21 +400,18 @@ export function ContractDetailDialog({ contractId, open, onOpenChange, onContrac
             value: commValue,
             status: "pending" as const,
           })
-          .select(`*, installments (due_date)`)
+          .select(`*, installments (payment_date)`)
           .single();
         if (newComm) newCommissions.push(newComm);
       }
 
-      // 3. Atualizar total do contrato
       const newTotal = installments.reduce((acc, curr) => acc + Number(curr.value), 0) + 0;
       await supabase.from("contracts").update({ total_value: newTotal }).eq("id", contractId);
 
-      // 4. Atualizar estado local
       setInstallments((prev) => [...prev, newInst]);
       setCommissions((prev) => [...prev, ...newCommissions]);
       setContract((prev: any) => ({ ...prev, total_value: newTotal }));
 
-      // 5. Entrar em modo edição da nova parcela
       startEditingInstallment(newInst);
 
       toast.success("Parcela adicionada! Ajuste o valor.");
@@ -474,12 +463,41 @@ export function ContractDetailDialog({ contractId, open, onOpenChange, onContrac
                 <p className="text-sm text-muted-foreground">Valor Total do Contrato</p>
                 <p className="text-2xl font-bold text-foreground">{formatCurrency(contract.total_value)}</p>
               </div>
-              <div className="text-right space-y-1">
-                <p className="text-sm text-muted-foreground">Cliente</p>
-                <p className="font-medium flex items-center justify-end gap-2">
-                  <User className="h-4 w-4" />
-                  {contract.clients?.name}
-                </p>
+              <div className="flex items-center gap-6">
+                {/* Dia de Vencimento */}
+                <div className="text-right space-y-1">
+                  <p className="text-sm text-muted-foreground">Dia de Vencimento</p>
+                  {editingDueDay ? (
+                    <div className="flex items-center gap-1">
+                      <Input
+                        type="number"
+                        min="1"
+                        max="31"
+                        value={dueDayValue}
+                        onChange={(e) => setDueDayValue(e.target.value)}
+                        className={`h-8 w-16 text-center ${noSpinnerClass}`}
+                      />
+                      <Button size="icon" variant="ghost" className="h-8 w-8 text-green-500" onClick={saveDueDay}>
+                        <Check className="h-4 w-4" />
+                      </Button>
+                      <Button size="icon" variant="ghost" className="h-8 w-8 text-red-500" onClick={() => { setEditingDueDay(false); setDueDayValue(String(contract.due_day || 20)); }}>
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <button onClick={() => setEditingDueDay(true)} className="font-bold text-lg flex items-center gap-1 hover:text-[#E8BD27] transition-colors">
+                      Dia {contract.due_day || 20}
+                      <Pencil className="h-3 w-3 text-muted-foreground" />
+                    </button>
+                  )}
+                </div>
+                <div className="text-right space-y-1">
+                  <p className="text-sm text-muted-foreground">Cliente</p>
+                  <p className="font-medium flex items-center justify-end gap-2">
+                    <User className="h-4 w-4" />
+                    {contract.clients?.name}
+                  </p>
+                </div>
               </div>
             </div>
 
@@ -487,7 +505,7 @@ export function ContractDetailDialog({ contractId, open, onOpenChange, onContrac
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-[120px]">Vencimento</TableHead>
+                    <TableHead className="w-[120px]">Data Pagamento</TableHead>
                     <TableHead className="w-[120px]">Valor</TableHead>
                     <TableHead className="w-[100px]">Taxa</TableHead>
                     <TableHead className="w-[120px]">Status</TableHead>
@@ -507,12 +525,12 @@ export function ContractDetailDialog({ contractId, open, onOpenChange, onContrac
                                   variant={"outline"}
                                   className={cn(
                                     "w-full justify-start text-left font-normal h-8",
-                                    !editInstallmentForm.due_date && "text-muted-foreground",
+                                    !editInstallmentForm.payment_date && "text-muted-foreground",
                                   )}
                                 >
                                   <CalendarIcon className="mr-2 h-4 w-4" />
-                                  {editInstallmentForm.due_date ? (
-                                    format(editInstallmentForm.due_date, "dd/MM/yyyy")
+                                  {editInstallmentForm.payment_date ? (
+                                    format(editInstallmentForm.payment_date, "dd/MM/yyyy")
                                   ) : (
                                     <span>Data</span>
                                   )}
@@ -521,16 +539,16 @@ export function ContractDetailDialog({ contractId, open, onOpenChange, onContrac
                               <PopoverContent className="w-auto p-0" align="start">
                                 <Calendar
                                   mode="single"
-                                  selected={editInstallmentForm.due_date}
+                                  selected={editInstallmentForm.payment_date}
                                   onSelect={(date) =>
-                                    setEditInstallmentForm({ ...editInstallmentForm, due_date: date })
+                                    setEditInstallmentForm({ ...editInstallmentForm, payment_date: date })
                                   }
                                   initialFocus
                                 />
                               </PopoverContent>
                             </Popover>
                           ) : (
-                            <span className="font-medium">{formatDate(inst.due_date)}</span>
+                            <span className="font-medium">{formatDate(inst.payment_date)}</span>
                           )}
                         </TableCell>
 

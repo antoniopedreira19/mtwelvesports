@@ -31,7 +31,7 @@ import { useRealtimeRefresh } from "@/hooks/useRealtimeRefresh";
 import { Client, Installment, Commission } from "@/types";
 import { toast as sonnerToast } from "sonner";
 
-type InstallmentWithFee = Omit<Installment, "id" | "contract_id"> & { transaction_fee?: number };
+type InstallmentWithFee = Omit<Installment, "id" | "contract_id"> & { transaction_fee?: number; dueDay?: number };
 
 export default function ClientesAtivos() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -56,7 +56,7 @@ export default function ClientesAtivos() {
   // Payment confirm modal state
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const [paymentInstallment, setPaymentInstallment] = useState<{
-    id: string; value: number; dueDate: string; contractId: string; transactionFee?: number;
+    id: string; value: number; paymentDate: string; contractId: string; transactionFee?: number;
   } | null>(null);
   const [paymentClientName, setPaymentClientName] = useState("");
 
@@ -153,7 +153,7 @@ export default function ClientesAtivos() {
     }
   };
 
-  const openPaymentModal = (inst: { id: string; value: number; dueDate: string; contractId: string; transactionFee?: number }, clientName: string) => {
+  const openPaymentModal = (inst: { id: string; value: number; paymentDate: string; contractId: string; transactionFee?: number }, clientName: string) => {
     setPaymentInstallment(inst);
     setPaymentClientName(clientName);
     setPaymentModalOpen(true);
@@ -221,6 +221,7 @@ export default function ClientesAtivos() {
     totalValue: number;
     installments: InstallmentWithFee[];
     commissions: Omit<Commission, "id" | "contract_id" | "value" | "installment_id" | "status">[];
+    dueDay: number;
   }) => {
     if (!selectedClient) return;
     setIsLoading(true);
@@ -228,6 +229,7 @@ export default function ClientesAtivos() {
       await createContract({
         clientId: selectedClient.id,
         totalValue: data.totalValue,
+        dueDay: data.dueDay,
         installments: data.installments,
         commissions: data.commissions,
       });
@@ -250,7 +252,7 @@ export default function ClientesAtivos() {
       for (const contract of client.contracts) {
         for (const inst of contract.installments) {
           if (inst.status === "pending" || inst.status === "overdue") {
-            const d = new Date(inst.dueDate.includes("T") ? inst.dueDate : inst.dueDate + "T12:00:00");
+            const d = new Date(inst.paymentDate.includes("T") ? inst.paymentDate : inst.paymentDate + "T12:00:00");
             monthSet.add(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`);
           }
         }
@@ -271,10 +273,11 @@ export default function ClientesAtivos() {
     type CobrancaInstallment = {
       id: string;
       value: number;
-      dueDate: string;
+      paymentDate: string;
       status: string;
       contractId: string;
       isOverdue: boolean;
+      dueDay: number;
     };
 
     type CobrancaClient = {
@@ -291,10 +294,14 @@ export default function ClientesAtivos() {
 
     for (const client of clientsData) {
       for (const contract of client.contracts) {
+        const dueDay = contract.dueDay || 20;
         for (const inst of contract.installments) {
           if (inst.status !== "pending" && inst.status !== "overdue") continue;
-          const d = new Date(inst.dueDate.includes("T") ? inst.dueDate : inst.dueDate + "T12:00:00");
+          const d = new Date(inst.paymentDate.includes("T") ? inst.paymentDate : inst.paymentDate + "T12:00:00");
           if (!isSameMonth(d, refDate)) continue;
+
+          // Calculate due date using contract's dueDay + installment month
+          const dueDateForMonth = new Date(d.getFullYear(), d.getMonth(), Math.min(dueDay, new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate()));
 
           if (!clientMap.has(client.clientId)) {
             clientMap.set(client.clientId, {
@@ -309,14 +316,15 @@ export default function ClientesAtivos() {
           }
 
           const cd = clientMap.get(client.clientId)!;
-          const isOverdue = inst.status === "overdue" || isBefore(d, today);
+          const isOverdue = inst.status === "overdue" || isBefore(dueDateForMonth, today);
           cd.installments.push({
             id: inst.id,
             value: inst.value,
-            dueDate: inst.dueDate,
+            paymentDate: inst.paymentDate,
             status: isOverdue ? "overdue" : "pending",
             contractId: contract.id,
             isOverdue,
+            dueDay,
           });
           cd.totalPending += inst.value;
           if (isOverdue) cd.hasOverdue = true;
@@ -356,12 +364,10 @@ export default function ClientesAtivos() {
     const allInstallments = client.contracts.flatMap((c) =>
       c.installments.map((i) => ({ ...i, contractId: c.id, contractStatus: c.status }))
     ).sort((a, b) => {
-      // Pending/overdue first, then paid/cancelled
       const statusOrder = (s: string) => (s === "pending" || s === "overdue") ? 0 : 1;
       const sa = statusOrder(a.status), sb = statusOrder(b.status);
       if (sa !== sb) return sa - sb;
-      // Within same group: most recent first
-      return b.dueDate.localeCompare(a.dueDate);
+      return b.paymentDate.localeCompare(a.paymentDate);
     });
     const allCommissions = client.contracts.flatMap((c) =>
       c.commissions.map((cm) => ({ ...cm, contractId: c.id }))
@@ -428,13 +434,13 @@ export default function ClientesAtivos() {
               <TabsContent value="parcelas" className="mt-0 px-5 pb-4">
                 <div className="rounded-lg border border-border/30 overflow-hidden mt-3">
                   <Table>
-                    <TableHeader><TableRow className="hover:bg-transparent"><TableHead className="text-xs h-9">Vencimento</TableHead><TableHead className="text-xs h-9">Valor</TableHead><TableHead className="text-xs h-9">Taxa</TableHead><TableHead className="text-xs h-9">Status</TableHead><TableHead className="text-xs h-9 text-right">Ação</TableHead></TableRow></TableHeader>
+                    <TableHeader><TableRow className="hover:bg-transparent"><TableHead className="text-xs h-9">Data Pagamento</TableHead><TableHead className="text-xs h-9">Valor</TableHead><TableHead className="text-xs h-9">Taxa</TableHead><TableHead className="text-xs h-9">Status</TableHead><TableHead className="text-xs h-9 text-right">Ação</TableHead></TableRow></TableHeader>
                     <TableBody>
                       {allInstallments.length === 0 ? (
                         <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground text-sm py-6">Nenhuma parcela</TableCell></TableRow>
                       ) : allInstallments.map((inst) => (
                         <TableRow key={inst.id}>
-                          <TableCell className="text-sm py-2">{formatDate(inst.dueDate)}</TableCell>
+                          <TableCell className="text-sm py-2">{formatDate(inst.paymentDate)}</TableCell>
                           <TableCell className="text-sm py-2 font-medium">{formatCurrency(inst.value)}</TableCell>
                           <TableCell className="text-sm py-2 text-muted-foreground">{formatCurrency(inst.transactionFee)}</TableCell>
                           <TableCell className="py-2">{statusBadge(inst.status)}</TableCell>
@@ -666,7 +672,7 @@ export default function ClientesAtivos() {
                   {/* Installments inline */}
                   <div className="px-4 pb-4 space-y-2">
                     {client.installments
-                      .sort((a, b) => b.dueDate.localeCompare(a.dueDate))
+                      .sort((a, b) => b.paymentDate.localeCompare(a.paymentDate))
                       .map((inst) => (
                         <div
                           key={inst.id}
@@ -677,7 +683,7 @@ export default function ClientesAtivos() {
                           }`}
                         >
                           <span className={`font-medium min-w-[90px] ${inst.isOverdue ? "text-destructive" : "text-foreground"}`}>
-                            {formatDate(inst.dueDate)}
+                            {formatDate(inst.paymentDate)}
                           </span>
                           <span className="font-semibold flex-1">{formatCurrency(inst.value)}</span>
                           {statusBadge(inst.status)}
@@ -689,7 +695,7 @@ export default function ClientesAtivos() {
                                 ? ""
                                 : "bg-emerald-600 hover:bg-emerald-700 text-white"
                             }`}
-                            onClick={() => openPaymentModal({ id: inst.id, value: inst.value, dueDate: inst.dueDate, contractId: inst.contractId }, client.clientName)}
+                            onClick={() => openPaymentModal({ id: inst.id, value: inst.value, paymentDate: inst.paymentDate, contractId: inst.contractId }, client.clientName)}
                           >
                             <Check className="h-3 w-3 mr-1" />
                             Baixar

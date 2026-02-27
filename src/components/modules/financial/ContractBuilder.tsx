@@ -21,6 +21,7 @@ interface ContractBuilderProps {
     totalValue: number;
     installments: InstallmentWithFee[];
     commissions: Omit<Commission, "id" | "contract_id" | "value" | "installment_id" | "status">[];
+    dueDay: number;
   }) => void;
   onCancel: () => void;
 }
@@ -30,6 +31,7 @@ export function ContractBuilder({ client, onSave, onCancel }: ContractBuilderPro
   const [installmentsCount, setInstallmentsCount] = useState<string>("1");
   const [startDate, setStartDate] = useState<Date>(new Date());
   const [defaultFee, setDefaultFee] = useState<string>("0");
+  const [dueDay, setDueDay] = useState<string>("20");
 
   const [installments, setInstallments] = useState<InstallmentWithFee[]>([]);
   const [commissions, setCommissions] = useState<
@@ -43,7 +45,6 @@ export function ContractBuilder({ client, onSave, onCancel }: ContractBuilderPro
 
   // CÁLCULO DO LÍQUIDO PARA EXIBIÇÃO
   const calculateNetTotal = () => {
-    // Se houver parcelas geradas, soma suas taxas reais. Se não, estima pela taxa padrão * count
     let totalTax = 0;
     if (installments.length > 0) {
       totalTax = installments.reduce((acc, curr) => acc + (curr.transaction_fee || 0), 0);
@@ -67,7 +68,7 @@ export function ContractBuilder({ client, onSave, onCancel }: ContractBuilderPro
     const installmentValue = value / count;
     const newInstallments = Array.from({ length: count }).map((_, index) => ({
       value: Number(installmentValue.toFixed(2)),
-      due_date: format(addMonths(startDate, index), "yyyy-MM-dd"),
+      payment_date: format(addMonths(startDate, index), "yyyy-MM-dd"),
       status: "pending" as const,
       transaction_fee: fee,
     }));
@@ -96,13 +97,13 @@ export function ContractBuilder({ client, onSave, onCancel }: ContractBuilderPro
     const fee = Number(defaultFee);
     const lastInst = installments[installments.length - 1];
     const lastDate = lastInst
-      ? new Date(lastInst.due_date + "T12:00:00")
+      ? new Date(lastInst.payment_date + "T12:00:00")
       : startDate;
     const nextDate = addMonths(lastDate, 1);
 
     const newInstallment: InstallmentWithFee = {
       value: 0,
-      due_date: format(nextDate, "yyyy-MM-dd"),
+      payment_date: format(nextDate, "yyyy-MM-dd"),
       status: "pending" as const,
       transaction_fee: fee,
     };
@@ -110,7 +111,6 @@ export function ContractBuilder({ client, onSave, onCancel }: ContractBuilderPro
     const newInstallments = [...installments, newInstallment];
     setInstallments(newInstallments);
     setInstallmentsCount(String(newInstallments.length));
-    // Recalcula total com a nova parcela (valor 0, mas taxa conta)
     const newTotal = newInstallments.reduce((acc, curr) => acc + Number(curr.value || 0), 0);
     setTotalValue(newTotal.toFixed(2));
   };
@@ -142,6 +142,7 @@ export function ContractBuilder({ client, onSave, onCancel }: ContractBuilderPro
       totalValue: Number(totalValue),
       installments,
       commissions,
+      dueDay: Number(dueDay) || 20,
     });
   };
 
@@ -161,7 +162,7 @@ export function ContractBuilder({ client, onSave, onCancel }: ContractBuilderPro
       )}
 
       {/* GRID DE CONFIGURAÇÃO */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
         <div className="space-y-2">
           <Label>Valor Total (R$)</Label>
           <Input
@@ -217,6 +218,18 @@ export function ContractBuilder({ client, onSave, onCancel }: ContractBuilderPro
             </PopoverContent>
           </Popover>
         </div>
+        <div className="space-y-2">
+          <Label>Dia de Vencimento</Label>
+          <Input
+            type="number"
+            min="1"
+            max="31"
+            value={dueDay}
+            onChange={(e) => setDueDay(e.target.value)}
+            placeholder="20"
+            className={noSpinnerClass}
+          />
+        </div>
       </div>
 
       <div className="flex justify-end">
@@ -241,7 +254,7 @@ export function ContractBuilder({ client, onSave, onCancel }: ContractBuilderPro
           <div className="grid gap-3">
             <div className="grid grid-cols-12 gap-4 px-3 text-xs font-medium text-muted-foreground uppercase">
               <div className="col-span-1">#</div>
-              <div className="col-span-4">Vencimento</div>
+              <div className="col-span-4">Data Pagamento</div>
               <div className="col-span-3">Valor (R$)</div>
               <div className="col-span-3 text-right">Taxa (R$)</div>
               <div className="col-span-1"></div>
@@ -258,14 +271,14 @@ export function ContractBuilder({ client, onSave, onCancel }: ContractBuilderPro
                     <PopoverTrigger asChild>
                       <Button variant={"outline"} className="w-full justify-start text-left font-normal h-9">
                         <CalendarIcon className="mr-2 h-4 w-4" />
-                        {inst.due_date ? format(new Date(inst.due_date + "T12:00:00"), "dd/MM/yy") : <span>Data</span>}
+                        {inst.payment_date ? format(new Date(inst.payment_date + "T12:00:00"), "dd/MM/yy") : <span>Data</span>}
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0">
                       <Calendar
                         mode="single"
-                        selected={new Date(inst.due_date + "T12:00:00")}
-                        onSelect={(date) => date && updateInstallment(index, "due_date", format(date, "yyyy-MM-dd"))}
+                        selected={new Date(inst.payment_date + "T12:00:00")}
+                        onSelect={(date) => date && updateInstallment(index, "payment_date", format(date, "yyyy-MM-dd"))}
                         initialFocus
                       />
                     </PopoverContent>
@@ -388,7 +401,6 @@ export function ContractBuilder({ client, onSave, onCancel }: ContractBuilderPro
                 <div className="w-40 space-y-2">
                   <Label>Valor Estimado</Label>
                   <div className="h-10 px-3 py-2 bg-muted rounded-md text-sm font-medium flex items-center text-muted-foreground border">
-                    {/* CÁLCULO DO LÍQUIDO APLICADO VISUALMENTE */}
                     R$ {((netTotal * comm.percentage) / 100).toFixed(2)}
                   </div>
                 </div>

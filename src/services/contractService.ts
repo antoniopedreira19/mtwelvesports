@@ -4,17 +4,19 @@ import { Installment, Commission } from "@/types";
 interface CreateContractInput {
   clientId: string;
   totalValue: number;
+  dueDay?: number;
   installments: (Omit<Installment, "id" | "contract_id"> & { transaction_fee?: number })[];
   commissions: Omit<Commission, "id" | "contract_id" | "value" | "installment_id" | "status">[];
 }
 
-export async function createContract({ clientId, totalValue, installments, commissions }: CreateContractInput) {
+export async function createContract({ clientId, totalValue, dueDay, installments, commissions }: CreateContractInput) {
   // 1. Criar Contrato
   const { data: contract, error: contractError } = await supabase
     .from("contracts")
     .insert({
       client_id: clientId,
       total_value: totalValue,
+      due_day: dueDay || 20,
       status: "active",
     })
     .select()
@@ -28,7 +30,7 @@ export async function createContract({ clientId, totalValue, installments, commi
       const installmentsData = installments.map((inst) => ({
         contract_id: contract.id,
         value: inst.value,
-        due_date: inst.due_date,
+        payment_date: inst.payment_date,
         status: (inst.status || "pending") as "pending" | "paid" | "overdue" | "cancelled",
         transaction_fee: inst.transaction_fee || 0,
       }));
@@ -163,7 +165,7 @@ export async function getContractDetails(contractId: string) {
     .from("installments")
     .select("*")
     .eq("contract_id", contractId)
-    .order("due_date", { ascending: true });
+    .order("payment_date", { ascending: true });
   if (instError) throw instError;
 
   const { data: commissions, error: commError } = await supabase
