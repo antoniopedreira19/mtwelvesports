@@ -20,9 +20,10 @@ import { useClientContracts, ClientContractData } from "@/hooks/useClientContrac
 import { ClientSelectorDialog } from "@/components/modules/financial/ClientSelectorDialog";
 import { ContractBuilder } from "@/components/modules/financial/ContractBuilder";
 import { ContractDetailDialog } from "@/components/modules/financial/ContractDetailDialog";
+import { PaymentConfirmDialog } from "@/components/modules/financial/PaymentConfirmDialog";
 import { NewClientForm } from "@/components/modules/crm/NewClientDialog";
 import { createContract } from "@/services/contractService";
-import { checkAndCompleteContract } from "@/services/contractService";
+import { checkAndCompleteContract, updateInstallmentValue } from "@/services/contractService";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
@@ -51,6 +52,13 @@ export default function ClientesAtivos() {
   // Contract detail state
   const [selectedContractId, setSelectedContractId] = useState<string | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
+
+  // Payment confirm modal state
+  const [paymentModalOpen, setPaymentModalOpen] = useState(false);
+  const [paymentInstallment, setPaymentInstallment] = useState<{
+    id: string; value: number; dueDate: string; contractId: string; transactionFee?: number;
+  } | null>(null);
+  const [paymentClientName, setPaymentClientName] = useState("");
 
   const [isLoading, setIsLoading] = useState(false);
 
@@ -110,6 +118,45 @@ export default function ClientesAtivos() {
     } catch {
       sonnerToast.error("Erro ao pagar comissão.");
     }
+  };
+
+  // Payment confirm handler (Cobranças modal)
+  const handlePaymentConfirm = async (data: {
+    installmentId: string;
+    contractId: string;
+    paidValue: number;
+    transactionFee: number;
+  }) => {
+    try {
+      // Update installment value, fee, and recalculate commissions
+      await updateInstallmentValue(data.installmentId, data.paidValue, data.transactionFee);
+      // Mark as paid
+      const { error } = await supabase.from("installments").update({ status: "paid" }).eq("id", data.installmentId);
+      if (error) throw error;
+
+      // Recalculate contract total based on actual paid values
+      const { data: allInstallments } = await supabase
+        .from("installments")
+        .select("value")
+        .eq("contract_id", data.contractId);
+      if (allInstallments) {
+        const newTotal = allInstallments.reduce((sum, i) => sum + Number(i.value), 0);
+        await supabase.from("contracts").update({ total_value: newTotal }).eq("id", data.contractId);
+      }
+
+      await checkAndCompleteContract(data.contractId);
+      sonnerToast.success("Parcela recebida com sucesso!");
+      refreshAll();
+    } catch {
+      sonnerToast.error("Erro ao confirmar recebimento.");
+      throw new Error("Erro ao confirmar recebimento");
+    }
+  };
+
+  const openPaymentModal = (inst: { id: string; value: number; dueDate: string; contractId: string; transactionFee?: number }, clientName: string) => {
+    setPaymentInstallment(inst);
+    setPaymentClientName(clientName);
+    setPaymentModalOpen(true);
   };
 
   // --- Contratos tab logic ---
@@ -630,7 +677,7 @@ export default function ClientesAtivos() {
                                 ? ""
                                 : "bg-emerald-600 hover:bg-emerald-700 text-white"
                             }`}
-                            onClick={() => quickPayInstallment(inst.id, inst.contractId)}
+                            onClick={() => openPaymentModal({ id: inst.id, value: inst.value, dueDate: inst.dueDate, contractId: inst.contractId }, client.clientName)}
                           >
                             <Check className="h-3 w-3 mr-1" />
                             Baixar
@@ -676,6 +723,13 @@ export default function ClientesAtivos() {
         </DialogContent>
       </Dialog>
       <ContractDetailDialog contractId={selectedContractId} open={isDetailOpen} onOpenChange={setIsDetailOpen} onContractUpdated={refreshAll} />
+      <PaymentConfirmDialog
+        open={paymentModalOpen}
+        onOpenChange={setPaymentModalOpen}
+        installment={paymentInstallment}
+        clientName={paymentClientName}
+        onConfirm={handlePaymentConfirm}
+      />
     </div>
   );
 }
