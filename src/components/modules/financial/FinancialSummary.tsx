@@ -808,11 +808,10 @@ function CommissionDetailDialog({
     async function fetchDetails() {
       if (!data || data.length === 0) return;
 
-      // Extrai os IDs reais das comissões (remove prefixos se houver)
-      const ids = data.map((r) => (r.id.includes("_") ? r.id.split("_")[0] : r.id));
+      const ids = data.map((r) => r.id);
 
       try {
-        // Busca os dados completos na tabela de comissões, fazendo join com parcelas e clientes
+        // Busca comissões pelo employee_name e mês, com join nas parcelas e clientes
         const { data: commissions, error } = await supabase
           .from("commissions")
           .select(
@@ -821,12 +820,13 @@ function CommissionDetailDialog({
             value,
             percentage,
             status,
-            installments (
+            installment_id,
+            installments!commissions_installment_id_fkey (
               value,
-              due_date
+              payment_date
             ),
-            contracts (
-              clients (name)
+            contracts!commissions_contract_id_fkey (
+              clients!contracts_client_id_fkey (name)
             )
           `,
           )
@@ -878,9 +878,9 @@ function CommissionDetailDialog({
                   <TableRow key={item.id || i} className="hover:bg-muted/5">
                     <TableCell className="font-medium">
                       {item.contracts?.clients?.name || "Cliente N/A"}
-                      {item.installments?.due_date && (
+                      {item.installments?.payment_date && (
                         <span className="block text-xs text-muted-foreground">
-                          Venc: {format(new Date(item.installments.due_date), "dd/MM")}
+                          Venc: {format(new Date(item.installments.payment_date), "dd/MM")}
                         </span>
                       )}
                     </TableCell>
