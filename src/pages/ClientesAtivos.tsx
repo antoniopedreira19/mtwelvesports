@@ -350,7 +350,14 @@ export default function ClientesAtivos() {
     const percentage = client.totalValue > 0 ? (client.totalPaid / client.totalValue) * 100 : 0;
     const allInstallments = client.contracts.flatMap((c) =>
       c.installments.map((i) => ({ ...i, contractId: c.id, contractStatus: c.status }))
-    );
+    ).sort((a, b) => {
+      // Pending/overdue first, then paid/cancelled
+      const statusOrder = (s: string) => (s === "pending" || s === "overdue") ? 0 : 1;
+      const sa = statusOrder(a.status), sb = statusOrder(b.status);
+      if (sa !== sb) return sa - sb;
+      // Within same group: most recent first
+      return b.dueDate.localeCompare(a.dueDate);
+    });
     const allCommissions = client.contracts.flatMap((c) =>
       c.commissions.map((cm) => ({ ...cm, contractId: c.id }))
     );
@@ -654,7 +661,7 @@ export default function ClientesAtivos() {
                   {/* Installments inline */}
                   <div className="px-4 pb-4 space-y-2">
                     {client.installments
-                      .sort((a, b) => a.dueDate.localeCompare(b.dueDate))
+                      .sort((a, b) => b.dueDate.localeCompare(a.dueDate))
                       .map((inst) => (
                         <div
                           key={inst.id}
