@@ -338,15 +338,15 @@ export function FinancialSummary() {
   const margemVariation = prevMonthMargem !== 0 ? currentMonthMargem - prevMonthMargem : 0;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* HEADER E FILTROS */}
       <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 w-full">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-3 w-full">
           {/* CARD RECEITA */}
           <Card className="bg-card border-l-2 border-l-emerald-500 border-border/50 shadow-sm">
-            <CardContent className="p-4">
+            <CardContent className="p-3">
               <p className="text-xs text-muted-foreground uppercase font-bold mb-1">Receita</p>
-              <p className="text-xl font-bold text-foreground">{formatCurrency(periodTotalReceitas)}</p>
+              <p className="text-lg font-bold text-foreground">{formatCurrency(periodTotalReceitas)}</p>
               <div className="flex items-center gap-6 mt-3 pt-3 border-t border-border/30">
                 <div>
                   <p className="text-[10px] text-muted-foreground uppercase">Mês Atual</p>
@@ -370,9 +370,9 @@ export function FinancialSummary() {
 
           {/* CARD DESPESA */}
           <Card className="bg-card border-l-2 border-l-red-500 border-border/50 shadow-sm">
-            <CardContent className="p-4">
+            <CardContent className="p-3">
               <p className="text-xs text-muted-foreground uppercase font-bold mb-1">Despesa</p>
-              <p className="text-xl font-bold text-foreground">
+              <p className="text-lg font-bold text-foreground">
                 -{formatCurrency(periodTotalDespesas + periodTotalComissoes)}
               </p>
               <div className="flex items-center gap-6 mt-3 pt-3 border-t border-border/30">
@@ -398,9 +398,9 @@ export function FinancialSummary() {
 
           {/* CARD RESULTADO */}
           <Card className="bg-card border-l-2 border-l-primary border-border/50 shadow-sm">
-            <CardContent className="p-4">
+            <CardContent className="p-3">
               <p className="text-xs text-muted-foreground uppercase font-bold mb-1">Resultado</p>
-              <p className="text-xl font-bold text-foreground">{formatCurrency(periodTotalLucro)}</p>
+              <p className="text-lg font-bold text-foreground">{formatCurrency(periodTotalLucro)}</p>
               <div className="flex items-center gap-6 mt-3 pt-3 border-t border-border/30">
                 <div>
                   <p className="text-[10px] text-muted-foreground uppercase">Mês Atual</p>
@@ -424,9 +424,9 @@ export function FinancialSummary() {
 
           {/* CARD MARGEM */}
           <Card className="bg-card border-l-2 border-l-blue-500 border-border/50 shadow-sm">
-            <CardContent className="p-4">
+            <CardContent className="p-3">
               <p className="text-xs text-muted-foreground uppercase font-bold mb-1">Margem</p>
-              <p className="text-xl font-bold text-foreground">{margem.toFixed(2)}%</p>
+              <p className="text-lg font-bold text-foreground">{margem.toFixed(2)}%</p>
               <div className="flex items-center gap-6 mt-3 pt-3 border-t border-border/30">
                 <div>
                   <p className="text-[10px] text-muted-foreground uppercase">Mês Atual</p>
@@ -447,21 +447,33 @@ export function FinancialSummary() {
         </div>
       </div>
 
-      {/* MATRIZ DRE */}
-      <Card className="border-border/50 bg-card overflow-hidden shadow-md">
-        <CardHeader className="pb-2 border-b border-border/50 bg-muted/20">
-          <div className="flex items-center justify-between gap-4 flex-wrap">
-            <CardTitle className="text-lg flex items-center gap-2">Matriz DRE</CardTitle>
-            <MonthRangeFilter
-              startMonth={startMonth}
-              endMonth={endMonth}
-              onRangeChange={handleRangeChange}
-              minDate={minDate}
-              maxDate={maxDate}
-            />
+      {/* MATRIZ DRE - Premium Container */}
+      <div className="rounded-2xl overflow-hidden ring-1 ring-border/30 shadow-lg bg-card">
+        {/* Gradient accent bar */}
+        <div className="h-1 bg-gradient-to-r from-emerald-500 via-yellow-500 to-red-500" />
+        
+        {/* Header */}
+        <div className="flex items-center justify-between gap-4 flex-wrap px-6 py-5 border-b border-border/50 bg-muted/10">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-primary/10">
+              <DollarSign className="w-5 h-5 text-primary" />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold text-foreground tracking-tight">Matriz DRE</h2>
+              <p className="text-xs text-muted-foreground mt-0.5">{getPeriodLabel()}</p>
+            </div>
           </div>
-        </CardHeader>
-        <CardContent className="p-0">
+          <MonthRangeFilter
+            startMonth={startMonth}
+            endMonth={endMonth}
+            onRangeChange={handleRangeChange}
+            minDate={minDate}
+            maxDate={maxDate}
+          />
+        </div>
+        
+        {/* Table content */}
+        <div className="p-0">
           <div className="overflow-x-auto">
             <Table className="relative w-max min-w-0 table-auto">
               <TableHeader className="sticky top-0 z-30">
@@ -629,9 +641,9 @@ export function FinancialSummary() {
                   ))}
 
                 {/* RESULTADO */}
-                <TableRow className="bg-table-row-result border-t-2 border-border/50">
-                  <TableCell className="w-[220px] min-w-[220px] max-w-[220px] font-bold text-[#E8BD27] pl-4 sticky left-0 bg-table-row-result z-30 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.3)]">
-                    (=) RESULTADO
+                <TableRow className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border-t-2 border-primary/30">
+                  <TableCell className="w-[220px] min-w-[220px] max-w-[220px] font-bold text-primary pl-4 sticky left-0 bg-table-row-result z-30 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.3)]">
+                    <span className="gold-text text-base">(=) RESULTADO</span>
                   </TableCell>
                   {displayMonths.map((m) => (
                     <>
@@ -651,8 +663,8 @@ export function FinancialSummary() {
               </TableBody>
             </Table>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* MODAL DE RECEITAS POR CLIENTE */}
       {receitasModalOpen && receitasModalMonth && (
