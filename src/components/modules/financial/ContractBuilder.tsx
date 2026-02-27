@@ -100,24 +100,25 @@ export function ContractBuilder({ client, onSave, onCancel }: ContractBuilderPro
       : startDate;
     const nextDate = addMonths(lastDate, 1);
 
-    // Calcula valor restante (total - soma das parcelas existentes)
-    const currentSum = installments.reduce((acc, curr) => acc + Number(curr.value || 0), 0);
-    const total = Number(totalValue) || 0;
-    const remaining = Math.max(0, total - currentSum);
-
     const newInstallment: InstallmentWithFee = {
-      value: Number(remaining.toFixed(2)),
+      value: 0,
       due_date: format(nextDate, "yyyy-MM-dd"),
       status: "pending" as const,
       transaction_fee: fee,
     };
 
-    setInstallments([...installments, newInstallment]);
+    const newInstallments = [...installments, newInstallment];
+    setInstallments(newInstallments);
+    setInstallmentsCount(String(newInstallments.length));
+    // Recalcula total com a nova parcela (valor 0, mas taxa conta)
+    const newTotal = newInstallments.reduce((acc, curr) => acc + Number(curr.value || 0), 0);
+    setTotalValue(newTotal.toFixed(2));
   };
 
   const removeInstallment = (index: number) => {
     const newInstallments = installments.filter((_, i) => i !== index);
     setInstallments(newInstallments);
+    setInstallmentsCount(String(newInstallments.length));
     const newTotal = newInstallments.reduce((acc, curr) => acc + Number(curr.value || 0), 0);
     setTotalValue(newTotal.toFixed(2));
   };
@@ -236,11 +237,7 @@ export function ContractBuilder({ client, onSave, onCancel }: ContractBuilderPro
           </h3>
         </div>
 
-        {installments.length === 0 ? (
-          <div className="text-center py-8 text-muted-foreground border-2 border-dashed rounded-lg">
-            Configure os valores acima e clique em "Gerar Parcelas"
-          </div>
-        ) : (
+        {installments.length > 0 && (
           <div className="grid gap-3">
             <div className="grid grid-cols-12 gap-4 px-3 text-xs font-medium text-muted-foreground uppercase">
               <div className="col-span-1">#</div>
@@ -305,20 +302,10 @@ export function ContractBuilder({ client, onSave, onCancel }: ContractBuilderPro
               </div>
             ))}
 
-            <Button
-              variant="outline"
-              size="sm"
-              className="w-full border-dashed gap-2 text-muted-foreground"
-              onClick={addInstallment}
-            >
-              <Plus className="h-4 w-4" />
-              Adicionar Parcela
-            </Button>
-
             <div className="flex justify-end mt-2 text-sm text-muted-foreground gap-4">
               <span>
                 Total Taxas:{" "}
-                <span className="text-red-400">
+                <span className="text-destructive">
                   {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(
                     installments.reduce((a, b) => a + (b.transaction_fee || 0), 0),
                   )}
@@ -335,6 +322,16 @@ export function ContractBuilder({ client, onSave, onCancel }: ContractBuilderPro
             </div>
           </div>
         )}
+
+        <Button
+          variant="outline"
+          size="sm"
+          className="w-full border-dashed gap-2 text-muted-foreground"
+          onClick={addInstallment}
+        >
+          <Plus className="h-4 w-4" />
+          Adicionar Parcela
+        </Button>
       </div>
 
       <Separator />
