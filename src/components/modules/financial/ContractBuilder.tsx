@@ -92,6 +92,36 @@ export function ContractBuilder({ client, onSave, onCancel }: ContractBuilderPro
     }
   };
 
+  const addInstallment = () => {
+    const fee = Number(defaultFee);
+    const lastInst = installments[installments.length - 1];
+    const lastDate = lastInst
+      ? new Date(lastInst.due_date + "T12:00:00")
+      : startDate;
+    const nextDate = addMonths(lastDate, 1);
+
+    // Calcula valor restante (total - soma das parcelas existentes)
+    const currentSum = installments.reduce((acc, curr) => acc + Number(curr.value || 0), 0);
+    const total = Number(totalValue) || 0;
+    const remaining = Math.max(0, total - currentSum);
+
+    const newInstallment: InstallmentWithFee = {
+      value: Number(remaining.toFixed(2)),
+      due_date: format(nextDate, "yyyy-MM-dd"),
+      status: "pending" as const,
+      transaction_fee: fee,
+    };
+
+    setInstallments([...installments, newInstallment]);
+  };
+
+  const removeInstallment = (index: number) => {
+    const newInstallments = installments.filter((_, i) => i !== index);
+    setInstallments(newInstallments);
+    const newTotal = newInstallments.reduce((acc, curr) => acc + Number(curr.value || 0), 0);
+    setTotalValue(newTotal.toFixed(2));
+  };
+
   const addCommission = () => {
     setCommissions([...commissions, { employee_name: "", percentage: 0 }]);
   };
@@ -215,8 +245,9 @@ export function ContractBuilder({ client, onSave, onCancel }: ContractBuilderPro
             <div className="grid grid-cols-12 gap-4 px-3 text-xs font-medium text-muted-foreground uppercase">
               <div className="col-span-1">#</div>
               <div className="col-span-4">Vencimento</div>
-              <div className="col-span-4">Valor (R$)</div>
+              <div className="col-span-3">Valor (R$)</div>
               <div className="col-span-3 text-right">Taxa (R$)</div>
+              <div className="col-span-1"></div>
             </div>
 
             {installments.map((inst, index) => (
@@ -243,7 +274,7 @@ export function ContractBuilder({ client, onSave, onCancel }: ContractBuilderPro
                     </PopoverContent>
                   </Popover>
                 </div>
-                <div className="col-span-4">
+                <div className="col-span-3">
                   <Input
                     type="number"
                     value={inst.value}
@@ -257,12 +288,32 @@ export function ContractBuilder({ client, onSave, onCancel }: ContractBuilderPro
                       type="number"
                       value={inst.transaction_fee}
                       onChange={(e) => updateInstallment(index, "transaction_fee", Number(e.target.value))}
-                      className={`h-9 text-right pr-2 text-red-400 ${noSpinnerClass}`}
+                      className={`h-9 text-right pr-2 text-destructive ${noSpinnerClass}`}
                     />
                   </div>
                 </div>
+                <div className="col-span-1 flex justify-center">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                    onClick={() => removeInstallment(index)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
             ))}
+
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full border-dashed gap-2 text-muted-foreground"
+              onClick={addInstallment}
+            >
+              <Plus className="h-4 w-4" />
+              Adicionar Parcela
+            </Button>
 
             <div className="flex justify-end mt-2 text-sm text-muted-foreground gap-4">
               <span>
