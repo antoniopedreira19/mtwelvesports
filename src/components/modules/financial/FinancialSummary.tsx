@@ -846,7 +846,7 @@ function CommissionDetailDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[600px] bg-card border-border">
+      <DialogContent className="max-w-[600px] max-h-[90vh] flex flex-col bg-card border-border">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <DollarSign className="h-5 w-5 text-primary" />
@@ -863,7 +863,7 @@ function CommissionDetailDialog({
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
         ) : (
-          <div className="rounded-md border border-border/50 overflow-hidden">
+          <div className="rounded-md border border-border/50 overflow-auto flex-1 min-h-0">
             <Table>
               <TableHeader className="bg-muted/30">
                 <TableRow>
