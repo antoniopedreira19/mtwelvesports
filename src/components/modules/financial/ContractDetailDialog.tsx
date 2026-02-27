@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
-import { format } from "date-fns";
+import { format, addMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -10,6 +10,7 @@ import {
   CircleDollarSign,
   FileText,
   Pencil,
+  Plus,
   User,
   X,
   CalendarIcon,
@@ -357,6 +358,81 @@ export function ContractDetailDialog({ contractId, open, onOpenChange, onContrac
   const noSpinnerClass =
     "[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none";
 
+  const addNewInstallment = async () => {
+    if (!contractId) return;
+
+    try {
+      // Calcula próxima data (+1 mês da última parcela)
+      const lastInst = installments[installments.length - 1];
+      const lastDate = lastInst
+        ? new Date(lastInst.due_date.includes("T") ? lastInst.due_date : lastInst.due_date + "T12:00:00")
+        : new Date();
+      const nextDate = addMonths(lastDate, 1);
+      const dueDateStr = format(nextDate, "yyyy-MM-dd");
+      const fee = lastInst ? Number(lastInst.transaction_fee || 0) : 0;
+
+      // 1. Inserir parcela no Supabase
+      const { data: newInst, error: instError } = await supabase
+        .from("installments")
+        .insert({
+          contract_id: contractId,
+          value: 0,
+          due_date: dueDateStr,
+          status: "pending" as const,
+          transaction_fee: fee,
+        })
+        .select()
+        .single();
+
+      if (instError || !newInst) throw instError || new Error("Erro ao criar parcela");
+
+      // 2. Criar comissões vinculadas (replica beneficiários únicos do contrato)
+      const uniqueCommissions = new Map<string, { employee_name: string; percentage: number }>();
+      commissions.forEach((c) => {
+        if (!uniqueCommissions.has(c.employee_name)) {
+          uniqueCommissions.set(c.employee_name, { employee_name: c.employee_name, percentage: c.percentage });
+        }
+      });
+
+      const newCommissions: any[] = [];
+      for (const [, comm] of uniqueCommissions) {
+        const netValue = Math.max(0, 0 - fee); // value is 0
+        const commValue = (netValue * comm.percentage) / 100;
+        const { data: newComm } = await supabase
+          .from("commissions")
+          .insert({
+            contract_id: contractId,
+            installment_id: newInst.id,
+            employee_name: comm.employee_name,
+            percentage: comm.percentage,
+            value: commValue,
+            status: "pending" as const,
+          })
+          .select(`*, installments (due_date)`)
+          .single();
+        if (newComm) newCommissions.push(newComm);
+      }
+
+      // 3. Atualizar total do contrato
+      const newTotal = installments.reduce((acc, curr) => acc + Number(curr.value), 0) + 0;
+      await supabase.from("contracts").update({ total_value: newTotal }).eq("id", contractId);
+
+      // 4. Atualizar estado local
+      setInstallments((prev) => [...prev, newInst]);
+      setCommissions((prev) => [...prev, ...newCommissions]);
+      setContract((prev: any) => ({ ...prev, total_value: newTotal }));
+
+      // 5. Entrar em modo edição da nova parcela
+      startEditingInstallment(newInst);
+
+      toast.success("Parcela adicionada! Ajuste o valor.");
+      if (onContractUpdated) onContractUpdated();
+    } catch (error) {
+      console.error(error);
+      toast.error("Erro ao adicionar parcela.");
+    }
+  };
+
   if (!contract) return null;
 
   return (
@@ -577,6 +653,16 @@ export function ContractDetailDialog({ contractId, open, onOpenChange, onContrac
                 </TableBody>
               </Table>
             </div>
+
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full border-dashed gap-2 text-muted-foreground shrink-0"
+              onClick={addNewInstallment}
+            >
+              <Plus className="h-4 w-4" />
+              Adicionar Parcela
+            </Button>
           </TabsContent>
 
           <TabsContent value="commissions" className="flex-1 flex flex-col mt-4 gap-4 overflow-hidden">
