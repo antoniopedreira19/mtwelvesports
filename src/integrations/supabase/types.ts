@@ -29,6 +29,11 @@ export type Database = {
           nationality: string | null
           next_step_notes: string | null
           notes: string | null
+          payer_email: string | null
+          payer_name: string | null
+          payer_phone: string | null
+          payer_relationship: string | null
+          payment_method: string | null
           phone: string | null
           school: string | null
           stage: Database["public"]["Enums"]["pipeline_stage"]
@@ -49,6 +54,11 @@ export type Database = {
           nationality?: string | null
           next_step_notes?: string | null
           notes?: string | null
+          payer_email?: string | null
+          payer_name?: string | null
+          payer_phone?: string | null
+          payer_relationship?: string | null
+          payment_method?: string | null
           phone?: string | null
           school?: string | null
           stage?: Database["public"]["Enums"]["pipeline_stage"]
@@ -69,6 +79,11 @@ export type Database = {
           nationality?: string | null
           next_step_notes?: string | null
           notes?: string | null
+          payer_email?: string | null
+          payer_name?: string | null
+          payer_phone?: string | null
+          payer_relationship?: string | null
+          payment_method?: string | null
           phone?: string | null
           school?: string | null
           stage?: Database["public"]["Enums"]["pipeline_stage"]
