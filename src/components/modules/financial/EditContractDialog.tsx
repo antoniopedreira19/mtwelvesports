@@ -18,7 +18,7 @@ import { toast } from "sonner";
 interface InstallmentEdit {
   id?: string;
   value: number;
-  due_date: string;
+  payment_date: string;
   status: "pending" | "paid" | "overdue" | "cancelled";
   transaction_fee: number;
 }
@@ -54,11 +54,11 @@ export function EditContractDialog({
   const [installmentsCount, setInstallmentsCount] = useState<string>("1");
   const [startDate, setStartDate] = useState<Date>(new Date());
   const [defaultFee, setDefaultFee] = useState<string>("0");
+  const [dueDay, setDueDay] = useState<string>("20");
 
   const [installments, setInstallments] = useState<InstallmentEdit[]>([]);
   const [commissions, setCommissions] = useState<CommissionEdit[]>([]);
 
-  // IDs originais para saber o que deletar
   const [originalInstallmentIds, setOriginalInstallmentIds] = useState<string[]>([]);
   const [originalCommissionIds, setOriginalCommissionIds] = useState<string[]>([]);
 
@@ -76,7 +76,6 @@ export function EditContractDialog({
   async function fetchContractData() {
     setIsLoading(true);
     try {
-      // Buscar contrato
       const { data: contractData, error: contractError } = await supabase
         .from("contracts")
         .select(`*, clients (name)`)
@@ -87,20 +86,20 @@ export function EditContractDialog({
       setContract(contractData);
       setClientName(contractData.clients?.name || "Cliente");
       setTotalValue(String(contractData.total_value));
+      setDueDay(String(contractData.due_day || 20));
 
-      // Buscar parcelas
       const { data: instData, error: instError } = await supabase
         .from("installments")
         .select("*")
         .eq("contract_id", contractId)
-        .order("due_date", { ascending: true });
+        .order("payment_date", { ascending: true });
 
       if (instError) throw instError;
 
       const mappedInstallments: InstallmentEdit[] = (instData || []).map((i) => ({
         id: i.id,
         value: Number(i.value),
-        due_date: i.due_date,
+        payment_date: i.payment_date,
         status: i.status as InstallmentEdit["status"],
         transaction_fee: Number(i.transaction_fee || 0),
       }));
@@ -109,11 +108,10 @@ export function EditContractDialog({
       setInstallmentsCount(String(mappedInstallments.length));
 
       if (mappedInstallments.length > 0) {
-        setStartDate(new Date(mappedInstallments[0].due_date + "T12:00:00"));
+        setStartDate(new Date(mappedInstallments[0].payment_date + "T12:00:00"));
         setDefaultFee(String(mappedInstallments[0].transaction_fee));
       }
 
-      // Buscar comissões
       const { data: commData, error: commError } = await supabase
         .from("commissions")
         .select("*")
@@ -122,7 +120,6 @@ export function EditContractDialog({
 
       if (commError) throw commError;
 
-      // Agrupar comissões por beneficiário (pegar uma por employee_name)
       const uniqueCommissions = new Map<string, CommissionEdit>();
       (commData || []).forEach((c) => {
         if (!uniqueCommissions.has(c.employee_name)) {
@@ -146,7 +143,6 @@ export function EditContractDialog({
     }
   }
 
-  // CÁLCULO DO LÍQUIDO PARA EXIBIÇÃO
   const calculateNetTotal = () => {
     let totalTax = 0;
     if (installments.length > 0) {
@@ -171,7 +167,7 @@ export function EditContractDialog({
     const installmentValue = value / count;
     const newInstallments: InstallmentEdit[] = Array.from({ length: count }).map((_, index) => ({
       value: Number(installmentValue.toFixed(2)),
-      due_date: format(addMonths(startDate, index), "yyyy-MM-dd"),
+      payment_date: format(addMonths(startDate, index), "yyyy-MM-dd"),
       status: "pending" as const,
       transaction_fee: fee,
     }));
@@ -219,11 +215,12 @@ export function EditContractDialog({
     setIsSaving(true);
     try {
       const newTotalValue = Number(totalValue);
+      const newDueDay = Math.min(31, Math.max(1, Number(dueDay) || 20));
 
       // 1. Atualizar contrato
       const { error: contractError } = await supabase
         .from("contracts")
-        .update({ total_value: newTotalValue, updated_at: new Date().toISOString() })
+        .update({ total_value: newTotalValue, due_day: newDueDay, updated_at: new Date().toISOString() })
         .eq("id", contractId);
 
       if (contractError) throw contractError;
@@ -243,7 +240,7 @@ export function EditContractDialog({
         const installmentsData = installments.map((inst) => ({
           contract_id: contractId,
           value: inst.value,
-          due_date: inst.due_date,
+          payment_date: inst.payment_date,
           status: inst.status || "pending",
           transaction_fee: inst.transaction_fee || 0,
         }));
@@ -263,7 +260,7 @@ export function EditContractDialog({
 
       if (fetchInstError) throw fetchInstError;
 
-      // 6. Inserir comissões (CÁLCULO: Valor - Taxa)
+      // 6. Inserir comissões
       if (commissions.length > 0 && createdInstallments) {
         const validCommissions = commissions.filter((c) => c.employee_name && c.percentage > 0);
 
@@ -339,7 +336,7 @@ export function EditContractDialog({
               </div>
 
               {/* GRID DE CONFIGURAÇÃO */}
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
                 <div className="space-y-2">
                   <Label>Valor Total (R$)</Label>
                   <Input
@@ -402,6 +399,18 @@ export function EditContractDialog({
                     </PopoverContent>
                   </Popover>
                 </div>
+                <div className="space-y-2">
+                  <Label>Dia de Vencimento</Label>
+                  <Input
+                    type="number"
+                    min="1"
+                    max="31"
+                    value={dueDay}
+                    onChange={(e) => setDueDay(e.target.value)}
+                    placeholder="20"
+                    className={noSpinnerClass}
+                  />
+                </div>
               </div>
 
               <div className="flex justify-end">
@@ -430,7 +439,7 @@ export function EditContractDialog({
                   <div className="grid gap-3">
                     <div className="grid grid-cols-12 gap-4 px-3 text-xs font-medium text-muted-foreground uppercase">
                       <div className="col-span-1">#</div>
-                      <div className="col-span-4">Vencimento</div>
+                      <div className="col-span-4">Data Pagamento</div>
                       <div className="col-span-4">Valor (R$)</div>
                       <div className="col-span-3 text-right">Taxa (R$)</div>
                     </div>
@@ -451,8 +460,8 @@ export function EditContractDialog({
                                 className="w-full justify-start text-left font-normal h-9"
                               >
                                 <CalendarIcon className="mr-2 h-4 w-4" />
-                                {inst.due_date ? (
-                                  format(new Date(inst.due_date + "T12:00:00"), "dd/MM/yy")
+                                {inst.payment_date ? (
+                                  format(new Date(inst.payment_date + "T12:00:00"), "dd/MM/yy")
                                 ) : (
                                   <span>Data</span>
                                 )}
@@ -461,9 +470,9 @@ export function EditContractDialog({
                             <PopoverContent className="w-auto p-0">
                               <Calendar
                                 mode="single"
-                                selected={new Date(inst.due_date + "T12:00:00")}
+                                selected={new Date(inst.payment_date + "T12:00:00")}
                                 onSelect={(date) =>
-                                  date && updateInstallment(index, "due_date", format(date, "yyyy-MM-dd"))
+                                  date && updateInstallment(index, "payment_date", format(date, "yyyy-MM-dd"))
                                 }
                                 initialFocus
                               />

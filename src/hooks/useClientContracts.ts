@@ -12,10 +12,11 @@ export interface ClientContractData {
     totalValue: number;
     notes: string | null;
     createdAt: string;
+    dueDay: number;
     installments: {
       id: string;
       value: number;
-      dueDate: string;
+      paymentDate: string;
       status: string;
       transactionFee: number;
     }[];
@@ -92,7 +93,7 @@ export function useClientContracts() {
           .map((i) => ({
             id: i.id,
             value: Number(i.value),
-            dueDate: i.due_date,
+            paymentDate: i.payment_date,
             status: i.status,
             transactionFee: Number(i.transaction_fee || 0),
           }));
@@ -117,6 +118,7 @@ export function useClientContracts() {
           totalValue: Number(contract.total_value),
           notes: contract.notes,
           createdAt: contract.created_at,
+          dueDay: Number(contract.due_day || 20),
           installments: cInstallments,
           commissions: cCommissions,
         });

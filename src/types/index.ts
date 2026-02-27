@@ -41,6 +41,7 @@ export interface Contract {
   created_at: string;
   updated_at: string;
   transaction_fee_percentage?: number;
+  due_day?: number;
   clients?: Client;
 }
 
@@ -48,7 +49,7 @@ export interface Installment {
   id: string;
   contract_id: string;
   value: number;
-  due_date: string;
+  payment_date: string;
   status: TransactionStatus;
   transaction_fee: number; // Campo novo
   created_at?: string;

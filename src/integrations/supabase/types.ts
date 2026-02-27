@@ -129,6 +129,7 @@ export type Database = {
         Row: {
           client_id: string
           created_at: string
+          due_day: number | null
           id: string
           notes: string | null
           status: Database["public"]["Enums"]["contract_status"]
@@ -138,6 +139,7 @@ export type Database = {
         Insert: {
           client_id: string
           created_at?: string
+          due_day?: number | null
           id?: string
           notes?: string | null
           status?: Database["public"]["Enums"]["contract_status"]
@@ -147,6 +149,7 @@ export type Database = {
         Update: {
           client_id?: string
           created_at?: string
+          due_day?: number | null
           id?: string
           notes?: string | null
           status?: Database["public"]["Enums"]["contract_status"]
@@ -233,8 +236,8 @@ export type Database = {
         Row: {
           contract_id: string
           created_at: string
-          due_date: string
           id: string
+          payment_date: string
           status: Database["public"]["Enums"]["transaction_status"]
           transaction_fee: number | null
           value: number
@@ -242,8 +245,8 @@ export type Database = {
         Insert: {
           contract_id: string
           created_at?: string
-          due_date: string
           id?: string
+          payment_date: string
           status?: Database["public"]["Enums"]["transaction_status"]
           transaction_fee?: number | null
           value: number
@@ -251,8 +254,8 @@ export type Database = {
         Update: {
           contract_id?: string
           created_at?: string
-          due_date?: string
           id?: string
+          payment_date?: string
           status?: Database["public"]["Enums"]["transaction_status"]
           transaction_fee?: number | null
           value?: number
