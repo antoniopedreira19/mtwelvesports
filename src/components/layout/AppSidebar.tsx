@@ -1,4 +1,4 @@
-import { LayoutDashboard, Users, UserCheck, Wallet, Settings, LogOut } from "lucide-react";
+import { LayoutDashboard, Users, UserCheck, Wallet, Settings, LogOut, UserCircle } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import {
@@ -30,9 +30,10 @@ export function AppSidebar() {
   // Menu items based on role
   const mainMenuItems = [
     { title: "Dashboard", url: "/", icon: LayoutDashboard, adminOnly: true },
-    { title: "CRM", url: "/crm", icon: Users, adminOnly: false },
-    { title: "Gestão de Contratos", url: "/gestao-contratos", icon: UserCheck, adminOnly: true },
     { title: "DRE", url: "/dre", icon: Wallet, adminOnly: true },
+    { title: "Gestão de Contratos", url: "/gestao-contratos", icon: UserCheck, adminOnly: true },
+    { title: "CRM", url: "/crm", icon: Users, adminOnly: false },
+    { title: "Clientes Ativos", url: "/dre?tab=clients", icon: UserCircle, adminOnly: true },
   ];
 
   const menuItems = mainMenuItems.filter((item) => !item.adminOnly || isAdmin);
@@ -69,14 +70,22 @@ export function AppSidebar() {
               <SidebarMenuButton
                 asChild
                 tooltip={item.title} // Tooltip nativo aparece quando minimizado
-                isActive={location.pathname === item.url}
+                isActive={
+                  item.url.includes("?")
+                    ? location.pathname + location.search === item.url
+                    : location.pathname === item.url && !location.search
+                }
                 className="hover:bg-white/10 active:bg-white/10 data-[active=true]:bg-[#E8BD27]/20 data-[active=true]:text-[#E8BD27] transition-all duration-200"
               >
                 <NavLink to={item.url} className="flex items-center gap-3">
                   <item.icon
                     className={cn(
                       "h-5 w-5",
-                      location.pathname === item.url ? "text-[#E8BD27]" : "text-muted-foreground",
+                      (item.url.includes("?")
+                        ? location.pathname + location.search === item.url
+                        : location.pathname === item.url && !location.search)
+                        ? "text-[#E8BD27]"
+                        : "text-muted-foreground",
                     )}
                   />
                   <span className="font-medium">{item.title}</span>

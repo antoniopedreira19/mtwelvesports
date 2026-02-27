@@ -5,8 +5,11 @@ import { ActiveClientsTab } from "@/components/modules/financial/ActiveClientsTa
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useRealtimeRefresh } from "@/hooks/useRealtimeRefresh";
 import { useQueryClient } from "@tanstack/react-query";
+import { useSearchParams } from "react-router-dom";
 
 export default function Financeiro() {
+  const [searchParams] = useSearchParams();
+  const defaultTab = searchParams.get("tab") || "dre";
   const queryClient = useQueryClient();
 
   const refreshAll = () => {
@@ -26,7 +29,7 @@ export default function Financeiro() {
         </div>
       </div>
 
-      <Tabs defaultValue="dre" className="w-full space-y-6">
+      <Tabs defaultValue={defaultTab} className="w-full space-y-6">
         <TabsList className="bg-muted/50 p-1 rounded-xl w-full md:w-auto grid grid-cols-3 md:flex">
           <TabsTrigger value="dre" className="rounded-lg data-[state=active]:bg-card data-[state=active]:shadow-sm">
             DRE Gerencial
