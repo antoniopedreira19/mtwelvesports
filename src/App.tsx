@@ -11,6 +11,7 @@ import Dashboard from "./pages/Dashboard";
 import CRM from "./pages/CRM";
 import GestaoContratos from "./pages/ClientesAtivos";
 import Financeiro from "./pages/Financeiro";
+import ClientesAtivosFinanceiro from "./pages/ClientesAtivosFinanceiro";
 import Settings from "./pages/Settings";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
@@ -57,6 +58,14 @@ const App = () => (
                 element={
                   <RoleProtectedRoute allowedRoles={["admin"]}>
                     <GestaoContratos />
+                  </RoleProtectedRoute>
+                }
+              />
+              <Route
+                path="/clientes-ativos"
+                element={
+                  <RoleProtectedRoute allowedRoles={["admin"]}>
+                    <ClientesAtivosFinanceiro />
                   </RoleProtectedRoute>
                 }
               />
