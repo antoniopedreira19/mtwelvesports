@@ -79,6 +79,7 @@ export function FinancialSummary() {
   // Estado do Modal de Receitas por cliente
   const [receitasModalOpen, setReceitasModalOpen] = useState(false);
   const [receitasModalMonth, setReceitasModalMonth] = useState<string | null>(null);
+  const [receitasFilterPaid, setReceitasFilterPaid] = useState(false);
 
   // Datas mínimas e máximas baseadas nos dados
   const [minDate, setMinDate] = useState<Date | undefined>();
@@ -511,6 +512,7 @@ export function FinancialSummary() {
                         className="text-right font-bold text-emerald-500/80 cursor-pointer hover:bg-emerald-500/10 transition-colors"
                         onClick={() => {
                           setReceitasModalMonth(m);
+                          setReceitasFilterPaid(false);
                           setReceitasModalOpen(true);
                         }}
                       >
@@ -686,49 +688,86 @@ export function FinancialSummary() {
                 ×
               </button>
             </div>
+            {/* Filter toggle */}
+            <div className="px-5 py-3 border-b border-border/30 flex items-center gap-2">
+              <button
+                onClick={() => setReceitasFilterPaid(!receitasFilterPaid)}
+                className={cn(
+                  "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all",
+                  receitasFilterPaid
+                    ? "bg-emerald-500/15 text-emerald-500 ring-1 ring-emerald-500/30"
+                    : "bg-muted/50 text-muted-foreground hover:text-foreground"
+                )}
+              >
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                Apenas pagos
+              </button>
+            </div>
             <div className="p-0 max-h-[60vh] overflow-y-auto">
               {(() => {
                 const items = matrix.receitas.items;
-                const activeItems = getActiveItems(items).filter(
+                let activeItems = getActiveItems(items).filter(
                   (title) => items[title][receitasModalMonth] && items[title][receitasModalMonth].amount > 0
                 );
+                if (receitasFilterPaid) {
+                  activeItems = activeItems.filter((title) => {
+                    const cell = items[title][receitasModalMonth];
+                    return cell && cell.status.length > 0 && cell.status.every((s) => s === "paid");
+                  });
+                }
+                const filteredTotal = activeItems.reduce((sum, title) => {
+                  const cell = items[title][receitasModalMonth];
+                  return sum + (cell?.amount || 0);
+                }, 0);
                 if (activeItems.length === 0) {
                   return (
-                    <div className="p-8 text-center text-muted-foreground">
-                      Nenhuma receita neste mês.
-                    </div>
+                    <>
+                      <div className="p-8 text-center text-muted-foreground">
+                        {receitasFilterPaid ? "Nenhuma receita paga neste mês." : "Nenhuma receita neste mês."}
+                      </div>
+                      <div className="p-4 border-t border-border/50 flex justify-between items-center bg-muted/30">
+                        <span className="text-sm text-muted-foreground font-medium">Total</span>
+                        <span className="text-base font-bold text-emerald-500">
+                          {formatCurrency(0)}
+                        </span>
+                      </div>
+                    </>
                   );
                 }
-                return activeItems.map((title, idx) => {
-                  const cell = items[title][receitasModalMonth];
-                  return (
-                    <div
-                      key={title}
-                      className={cn(
-                        "flex items-center justify-between px-5 py-3.5",
-                        idx < activeItems.length - 1 && "border-b border-border/30"
-                      )}
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/60" />
-                        <span className="text-sm font-medium">{title}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-semibold text-emerald-500">
-                          {formatCurrency(cell.amount)}
-                        </span>
-                        <StatusIcon statuses={cell.status} />
-                      </div>
+                return (
+                  <>
+                    {activeItems.map((title, idx) => {
+                      const cell = items[title][receitasModalMonth];
+                      return (
+                        <div
+                          key={title}
+                          className={cn(
+                            "flex items-center justify-between px-5 py-3.5",
+                            idx < activeItems.length - 1 && "border-b border-border/30"
+                          )}
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/60" />
+                            <span className="text-sm font-medium">{title}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-semibold text-emerald-500">
+                              {formatCurrency(cell.amount)}
+                            </span>
+                            <StatusIcon statuses={cell.status} />
+                          </div>
+                        </div>
+                      );
+                    })}
+                    <div className="p-4 border-t border-border/50 flex justify-between items-center bg-muted/30">
+                      <span className="text-sm text-muted-foreground font-medium">Total{receitasFilterPaid ? " (pagos)" : ""}</span>
+                      <span className="text-base font-bold text-emerald-500">
+                        {formatCurrency(filteredTotal)}
+                      </span>
                     </div>
-                  );
-                });
+                  </>
+                );
               })()}
-            </div>
-            <div className="p-4 border-t border-border/50 flex justify-between items-center bg-muted/30">
-              <span className="text-sm text-muted-foreground font-medium">Total</span>
-              <span className="text-base font-bold text-emerald-500">
-                {formatCurrency(matrix.receitas.totalByMonth[receitasModalMonth] || 0)}
-              </span>
             </div>
           </div>
         </div>
