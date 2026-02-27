@@ -35,7 +35,7 @@ type InstallmentWithFee = Omit<Installment, "id" | "contract_id"> & { transactio
 
 export default function ClientesAtivos() {
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "completed">("all");
+  const [statusFilter, setStatusFilter] = useState<"active" | "completed">("active");
   const [expandedClients, setExpandedClients] = useState<Set<string>>(new Set());
   const [topTab, setTopTab] = useState("contratos");
 
@@ -162,13 +162,18 @@ export default function ClientesAtivos() {
   // --- Contratos tab logic ---
   const filteredClients = useMemo(() => {
     if (!clientsData) return [];
-    return clientsData.filter((c) => {
+    const filtered = clientsData.filter((c) => {
       const matchesSearch = c.clientName.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesStatus =
-        statusFilter === "all" ||
         (statusFilter === "active" && c.hasActive) ||
         (statusFilter === "completed" && c.hasCompleted && !c.hasActive);
       return matchesSearch && matchesStatus;
+    });
+    // Sort by completion percentage descending
+    return filtered.sort((a, b) => {
+      const pctA = a.totalValue > 0 ? (a.totalPaid / a.totalValue) * 100 : 0;
+      const pctB = b.totalValue > 0 ? (b.totalPaid / b.totalValue) * 100 : 0;
+      return pctB - pctA;
     });
   }, [clientsData, searchTerm, statusFilter]);
 
@@ -531,9 +536,9 @@ export default function ClientesAtivos() {
               <Input placeholder="Buscar cliente..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-9 bg-card" />
             </div>
             <div className="flex gap-1 bg-muted/50 p-1 rounded-lg">
-              {(["all", "active", "completed"] as const).map((f) => (
+              {(["active", "completed"] as const).map((f) => (
                 <button key={f} onClick={() => setStatusFilter(f)} className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${statusFilter === f ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
-                  {f === "all" ? "Todos" : f === "active" ? "Ativos" : "Concluídos"}
+                  {f === "active" ? "Ativos" : "Concluídos"}
                 </button>
               ))}
             </div>
