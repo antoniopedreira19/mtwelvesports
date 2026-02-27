@@ -200,20 +200,31 @@ export function ContractDetailDialog({ contractId, open, onOpenChange, onContrac
     const netVal = Math.max(0, newVal - newFee);
     const formattedDate = format(editInstallmentForm.due_date, "yyyy-MM-dd");
 
-    // Optimistic update para parcela
-    setInstallments((prev) =>
-      prev.map((inst) =>
-        inst.id === id
-          ? {
-              ...inst,
-              value: newVal,
-              due_date: formattedDate,
-              status: editInstallmentForm.status,
-              transaction_fee: newFee,
-            }
-          : inst
-      )
-    );
+    // Detecta diferença de meses na data para propagar às parcelas seguintes
+    const editedInst = installments.find((i) => i.id === id);
+    const oldDate = editedInst ? new Date(editedInst.due_date.includes("T") ? editedInst.due_date : editedInst.due_date + "T12:00:00") : null;
+    const newDate = editInstallmentForm.due_date;
+    let monthDiff = 0;
+    if (oldDate && newDate) {
+      monthDiff = (newDate.getFullYear() - oldDate.getFullYear()) * 12 + (newDate.getMonth() - oldDate.getMonth());
+    }
+
+    // Calcula novas datas para parcelas posteriores
+    const editedIndex = installments.findIndex((i) => i.id === id);
+    const shiftedInstallments = installments.map((inst, idx) => {
+      if (inst.id === id) {
+        return { ...inst, value: newVal, due_date: formattedDate, status: editInstallmentForm.status, transaction_fee: newFee };
+      }
+      if (monthDiff !== 0 && idx > editedIndex) {
+        const origDate = new Date(inst.due_date.includes("T") ? inst.due_date : inst.due_date + "T12:00:00");
+        origDate.setMonth(origDate.getMonth() + monthDiff);
+        return { ...inst, due_date: format(origDate, "yyyy-MM-dd") };
+      }
+      return inst;
+    });
+
+    // Optimistic update
+    setInstallments(shiftedInstallments);
 
     // Optimistic update para comissões vinculadas
     setCommissions((prev) =>
@@ -227,15 +238,12 @@ export function ContractDetailDialog({ contractId, open, onOpenChange, onContrac
     );
 
     // Calcula novo total otimisticamente
-    const newTotal = installments.reduce((acc, curr) => {
-      if (curr.id === id) return acc + newVal;
-      return acc + Number(curr.value);
-    }, 0);
-
+    const newTotal = shiftedInstallments.reduce((acc, curr) => acc + Number(curr.value), 0);
     setContract((prev: any) => ({ ...prev, total_value: newTotal }));
     setEditingInstallmentId(null);
 
     try {
+      // Atualiza a parcela editada
       const { error: instError } = await supabase
         .from("installments")
         .update({
@@ -247,6 +255,17 @@ export function ContractDetailDialog({ contractId, open, onOpenChange, onContrac
         .eq("id", id);
 
       if (instError) throw instError;
+
+      // Propaga mudança de data às parcelas posteriores
+      if (monthDiff !== 0) {
+        for (let idx = editedIndex + 1; idx < installments.length; idx++) {
+          const inst = installments[idx];
+          const origDate = new Date(inst.due_date.includes("T") ? inst.due_date : inst.due_date + "T12:00:00");
+          origDate.setMonth(origDate.getMonth() + monthDiff);
+          const newDueDate = format(origDate, "yyyy-MM-dd");
+          await supabase.from("installments").update({ due_date: newDueDate }).eq("id", inst.id);
+        }
+      }
 
       // Atualiza comissões no servidor
       const { data: linkedCommissions } = await supabase
@@ -271,7 +290,7 @@ export function ContractDetailDialog({ contractId, open, onOpenChange, onContrac
       // Verifica se o contrato foi concluído
       await checkAndCompleteContract(contractId!);
 
-      toast.success("Parcela e comissões atualizadas!");
+      toast.success(monthDiff !== 0 ? "Parcela e datas seguintes atualizadas!" : "Parcela e comissões atualizadas!");
       if (onContractUpdated) onContractUpdated();
     } catch (error) {
       // Rollback em caso de erro
