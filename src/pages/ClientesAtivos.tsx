@@ -237,8 +237,10 @@ export default function ClientesAtivos() {
       setIsContractModalOpen(false);
       setSelectedClient(null);
       refreshAll();
-    } catch {
-      toast({ title: "Erro", description: "Erro ao salvar contrato.", variant: "destructive" });
+    } catch (error: any) {
+      console.error("Erro ao salvar contrato:", error);
+      console.error("Detalhes do erro:", JSON.stringify(error, null, 2));
+      toast({ title: "Erro", description: `Erro ao salvar contrato: ${error?.message || error}`, variant: "destructive" });
     } finally {
       setIsLoading(false);
     }

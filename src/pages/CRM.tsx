@@ -64,9 +64,10 @@ export default function CRM() {
       setIsContractModalOpen(false);
       setSelectedClient(undefined);
       setRefreshTrigger((prev) => prev + 1);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro ao salvar contrato:", error);
-      toast({ title: "Erro", description: "Ocorreu um erro ao cadastrar o contrato.", variant: "destructive" });
+      console.error("Detalhes do erro:", JSON.stringify(error, null, 2));
+      toast({ title: "Erro", description: `Erro ao salvar contrato: ${error?.message || error}`, variant: "destructive" });
     } finally {
       setIsLoading(false);
     }

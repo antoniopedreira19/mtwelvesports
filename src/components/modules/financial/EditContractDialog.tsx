@@ -293,9 +293,10 @@ export function EditContractDialog({
       toast.success("Contrato atualizado com sucesso!");
       onOpenChange(false);
       if (onContractUpdated) onContractUpdated();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro ao atualizar contrato:", error);
-      toast.error("Erro ao atualizar contrato.");
+      console.error("Detalhes do erro:", JSON.stringify(error, null, 2));
+      toast.error(`Erro ao atualizar contrato: ${error?.message || error}`);
     } finally {
       setIsSaving(false);
     }
