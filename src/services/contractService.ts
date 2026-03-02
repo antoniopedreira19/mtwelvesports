@@ -143,12 +143,24 @@ export async function checkAndCompleteContract(contractId: string) {
     .select("status")
     .eq("contract_id", contractId);
   if (error) throw error;
-  const allPaid = installments?.every((i) => i.status === "paid");
+  if (!installments || installments.length === 0) return false;
+  
+  // Só conclui se TODAS as parcelas (exceto canceladas) estiverem pagas
+  const nonCancelled = installments.filter((i) => i.status !== "cancelled");
+  if (nonCancelled.length === 0) return false;
+  
+  const allPaid = nonCancelled.every((i) => i.status === "paid");
   if (allPaid) {
     await supabase.from("contracts").update({ status: "completed" }).eq("id", contractId);
     return true;
+  } else {
+    // Se tem parcela pendente/vencida, garantir que está ativo
+    const { data: contract } = await supabase.from("contracts").select("status").eq("id", contractId).single();
+    if (contract?.status === "completed") {
+      await supabase.from("contracts").update({ status: "active" }).eq("id", contractId);
+    }
+    return false;
   }
-  return false;
 }
 
 export async function getContractDetails(contractId: string) {
