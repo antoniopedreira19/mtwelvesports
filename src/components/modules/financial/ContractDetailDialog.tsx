@@ -767,182 +767,184 @@ export function ContractDetailDialog({ contractId, open, onOpenChange, onContrac
               </div>
             </div>
 
-            <div className="rounded-md border border-border/50 flex-1 overflow-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-[200px]">Beneficiário</TableHead>
-                    <TableHead className="w-[100px]">%</TableHead>
-                    <TableHead>Valor</TableHead>
-                    <TableHead className="w-[140px]">Status</TableHead>
-                    <TableHead className="text-right w-[100px]">Ações</TableHead>
-                  </TableRow>
-                </TableHeader>
-
-                {commissionsGroups.length === 0 ? (
-                  <TableBody>
-                    <TableRow>
-                      <TableCell colSpan={5} className="text-center text-muted-foreground h-24">
-                        Nenhuma comissão cadastrada.
-                      </TableCell>
-                    </TableRow>
-                  </TableBody>
-                ) : (
-                  <TableBody>
-                    {commissionsGroups.map((group) => (
-                      <>
-                        <TableRow key={group.label} className="bg-muted/50 hover:bg-muted/50">
-                          <TableCell colSpan={5} className="py-2 font-semibold text-primary flex items-center gap-2">
-                            <CalendarDays className="h-4 w-4" />
-                            {group.label}
-                          </TableCell>
-                        </TableRow>
-
-                        {group.items.map((comm) => {
-                          const isEditing = editingCommissionId === comm.id;
-                          return (
-                            <TableRow key={comm.id} className="hover:bg-muted/5">
-                              <TableCell>
-                                {isEditing ? (
-                                  <Select
-                                    value={editCommissionForm.employee_name}
-                                    onValueChange={(val) =>
-                                      setEditCommissionForm({ ...editCommissionForm, employee_name: val })
-                                    }
-                                  >
-                                    <SelectTrigger className="h-8 w-full">
-                                      <SelectValue placeholder="Selecione..." />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      {employees.map((emp) => (
-                                        <SelectItem key={emp.id} value={emp.name}>
-                                          {emp.name}
-                                        </SelectItem>
-                                      ))}
-                                    </SelectContent>
-                                  </Select>
-                                ) : (
-                                  <div className="font-medium ml-4">{comm.employee_name}</div>
-                                )}
-                              </TableCell>
-                              <TableCell>
-                                {isEditing ? (
-                                  <Input
-                                    type="number"
-                                    value={editCommissionForm.percentage}
-                                    onChange={(e) =>
-                                      setEditCommissionForm({ ...editCommissionForm, percentage: e.target.value })
-                                    }
-                                    className={`h-8 ${noSpinnerClass}`}
-                                  />
-                                ) : (
-                                  <span className="text-muted-foreground">{comm.percentage}%</span>
-                                )}
-                              </TableCell>
-                              <TableCell>
-                                {isEditing ? (
-                                  <Input
-                                    type="number"
-                                    value={editCommissionForm.value}
-                                    onChange={(e) =>
-                                      setEditCommissionForm({ ...editCommissionForm, value: e.target.value })
-                                    }
-                                    className={`h-8 ${noSpinnerClass}`}
-                                  />
-                                ) : (
-                                  <span className="text-red-400 font-medium">{formatCurrency(comm.value)}</span>
-                                )}
-                              </TableCell>
-                              <TableCell>
-                                {isEditing ? (
-                                  <Select
-                                    value={editCommissionForm.status}
-                                    onValueChange={(val) =>
-                                      setEditCommissionForm({ ...editCommissionForm, status: val })
-                                    }
-                                  >
-                                    <SelectTrigger className="h-8 w-full">
-                                      <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="pending">Pendente</SelectItem>
-                                      <SelectItem value="paid">Pago</SelectItem>
-                                      <SelectItem value="cancelled">Cancelado</SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                ) : (
-                                  <Badge
-                                    variant="outline"
-                                    className={
-                                      comm.status === "paid"
-                                        ? "border-emerald-500 text-emerald-500 bg-emerald-500/10"
-                                        : "border-yellow-500 text-yellow-600 bg-yellow-500/10"
-                                    }
-                                  >
-                                    {comm.status === "paid" ? "Pago" : "Pendente"}
-                                  </Badge>
-                                )}
-                              </TableCell>
-                              <TableCell className="text-right">
-                                {isEditing ? (
-                                  <div className="flex justify-end gap-1">
-                                    <Button
-                                      size="icon"
-                                      variant="ghost"
-                                      className="h-8 w-8 text-green-500"
-                                      onClick={() => saveCommission(comm.id)}
-                                    >
-                                      <Check className="h-4 w-4" />
-                                    </Button>
-                                    <Button
-                                      size="icon"
-                                      variant="ghost"
-                                      className="h-8 w-8 text-red-500"
-                                      onClick={() => setEditingCommissionId(null)}
-                                    >
-                                      <X className="h-4 w-4" />
-                                    </Button>
-                                  </div>
-                                ) : (
-                                  <div className="flex justify-end gap-1">
-                                    {comm.status !== "paid" && (
-                                      <TooltipProvider>
-                                        <Tooltip>
-                                          <TooltipTrigger asChild>
-                                            <Button
-                                              size="icon"
-                                              variant="ghost"
-                                              className="h-8 w-8 text-emerald-500 hover:text-emerald-600 hover:bg-emerald-50"
-                                              onClick={() => quickPayCommission(comm.id)}
-                                            >
-                                              <CheckCircle2 className="h-4 w-4" />
-                                            </Button>
-                                          </TooltipTrigger>
-                                          <TooltipContent>
-                                            <p>Marcar como Pago</p>
-                                          </TooltipContent>
-                                        </Tooltip>
-                                      </TooltipProvider>
-                                    )}
-                                    <Button
-                                      size="icon"
-                                      variant="ghost"
-                                      className="h-8 w-8"
-                                      onClick={() => startEditingCommission(comm)}
-                                    >
-                                      <Pencil className="h-4 w-4 text-muted-foreground" />
-                                    </Button>
-                                  </div>
-                                )}
-                              </TableCell>
+            <div className="flex-1 overflow-auto space-y-6">
+              {commissionsGroups.length === 0 ? (
+                <div className="rounded-md border border-border/50 text-center text-muted-foreground py-12">
+                  Nenhuma comissão cadastrada.
+                </div>
+              ) : (
+                commissionsGroups.map((group) => {
+                  const groupTotal = group.items.reduce((acc: number, c: any) => acc + Number(c.value || 0), 0);
+                  return (
+                    <div key={group.label}>
+                      <div className="flex items-center justify-between mb-2">
+                        <h4 className="text-sm font-bold text-primary flex items-center gap-2">
+                          <span className="w-2 h-2 rounded-full bg-primary" />
+                          {group.label}
+                        </h4>
+                        <Badge variant="outline" className="border-border bg-muted/50 text-xs font-semibold">
+                          Total: {formatCurrency(groupTotal)}
+                        </Badge>
+                      </div>
+                      <div className="rounded-md border border-border/50 overflow-hidden">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead className="w-[200px]">Beneficiário</TableHead>
+                              <TableHead className="w-[100px]">%</TableHead>
+                              <TableHead>Valor</TableHead>
+                              <TableHead className="w-[140px]">Status</TableHead>
+                              <TableHead className="text-right w-[100px]">Ação</TableHead>
                             </TableRow>
-                          );
-                        })}
-                      </>
-                    ))}
-                  </TableBody>
-                )}
-              </Table>
+                          </TableHeader>
+                          <TableBody>
+                            {group.items.map((comm: any) => {
+                              const isEditing = editingCommissionId === comm.id;
+                              return (
+                                <TableRow key={comm.id} className="hover:bg-muted/5">
+                                  <TableCell>
+                                    {isEditing ? (
+                                      <Select
+                                        value={editCommissionForm.employee_name}
+                                        onValueChange={(val) =>
+                                          setEditCommissionForm({ ...editCommissionForm, employee_name: val })
+                                        }
+                                      >
+                                        <SelectTrigger className="h-8 w-full">
+                                          <SelectValue placeholder="Selecione..." />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                          {employees.map((emp) => (
+                                            <SelectItem key={emp.id} value={emp.name}>
+                                              {emp.name}
+                                            </SelectItem>
+                                          ))}
+                                        </SelectContent>
+                                      </Select>
+                                    ) : (
+                                      <div className="font-medium">{comm.employee_name}</div>
+                                    )}
+                                  </TableCell>
+                                  <TableCell>
+                                    {isEditing ? (
+                                      <Input
+                                        type="number"
+                                        value={editCommissionForm.percentage}
+                                        onChange={(e) =>
+                                          setEditCommissionForm({ ...editCommissionForm, percentage: e.target.value })
+                                        }
+                                        className={`h-8 ${noSpinnerClass}`}
+                                      />
+                                    ) : (
+                                      <span className="text-muted-foreground">{comm.percentage}%</span>
+                                    )}
+                                  </TableCell>
+                                  <TableCell>
+                                    {isEditing ? (
+                                      <Input
+                                        type="number"
+                                        value={editCommissionForm.value}
+                                        onChange={(e) =>
+                                          setEditCommissionForm({ ...editCommissionForm, value: e.target.value })
+                                        }
+                                        className={`h-8 ${noSpinnerClass}`}
+                                      />
+                                    ) : (
+                                      <span className="text-red-400 font-medium">{formatCurrency(comm.value)}</span>
+                                    )}
+                                  </TableCell>
+                                  <TableCell>
+                                    {isEditing ? (
+                                      <Select
+                                        value={editCommissionForm.status}
+                                        onValueChange={(val) =>
+                                          setEditCommissionForm({ ...editCommissionForm, status: val })
+                                        }
+                                      >
+                                        <SelectTrigger className="h-8 w-full">
+                                          <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                          <SelectItem value="pending">Pendente</SelectItem>
+                                          <SelectItem value="paid">Pago</SelectItem>
+                                          <SelectItem value="cancelled">Cancelado</SelectItem>
+                                        </SelectContent>
+                                      </Select>
+                                    ) : (
+                                      <Badge
+                                        variant="outline"
+                                        className={
+                                          comm.status === "paid"
+                                            ? "border-emerald-500 text-emerald-500 bg-emerald-500/10"
+                                            : "border-yellow-500 text-yellow-600 bg-yellow-500/10"
+                                        }
+                                      >
+                                        {comm.status === "paid" ? "Pago" : "Pendente"}
+                                      </Badge>
+                                    )}
+                                  </TableCell>
+                                  <TableCell className="text-right">
+                                    {isEditing ? (
+                                      <div className="flex justify-end gap-1">
+                                        <Button
+                                          size="icon"
+                                          variant="ghost"
+                                          className="h-8 w-8 text-green-500"
+                                          onClick={() => saveCommission(comm.id)}
+                                        >
+                                          <Check className="h-4 w-4" />
+                                        </Button>
+                                        <Button
+                                          size="icon"
+                                          variant="ghost"
+                                          className="h-8 w-8 text-red-500"
+                                          onClick={() => setEditingCommissionId(null)}
+                                        >
+                                          <X className="h-4 w-4" />
+                                        </Button>
+                                      </div>
+                                    ) : (
+                                      <div className="flex justify-end gap-1">
+                                        {comm.status !== "paid" && (
+                                          <TooltipProvider>
+                                            <Tooltip>
+                                              <TooltipTrigger asChild>
+                                                <Button
+                                                  size="icon"
+                                                  variant="ghost"
+                                                  className="h-8 w-8 text-emerald-500 hover:text-emerald-600 hover:bg-emerald-50"
+                                                  onClick={() => quickPayCommission(comm.id)}
+                                                >
+                                                  <CheckCircle2 className="h-4 w-4" />
+                                                </Button>
+                                              </TooltipTrigger>
+                                              <TooltipContent>
+                                                <p>Marcar como Pago</p>
+                                              </TooltipContent>
+                                            </Tooltip>
+                                          </TooltipProvider>
+                                        )}
+                                        <Button
+                                          size="icon"
+                                          variant="ghost"
+                                          className="h-8 w-8"
+                                          onClick={() => startEditingCommission(comm)}
+                                        >
+                                          <Pencil className="h-4 w-4 text-muted-foreground" />
+                                        </Button>
+                                      </div>
+                                    )}
+                                  </TableCell>
+                                </TableRow>
+                              );
+                            })}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
             </div>
           </TabsContent>
         </Tabs>
