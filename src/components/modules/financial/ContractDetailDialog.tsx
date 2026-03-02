@@ -406,11 +406,16 @@ export function ContractDetailDialog({ contractId, open, onOpenChange, onContrac
       }
 
       const newTotal = installments.reduce((acc, curr) => acc + Number(curr.value), 0) + 0;
-      await supabase.from("contracts").update({ total_value: newTotal }).eq("id", contractId);
+      // Se o contrato estava concluído, voltar para ativo ao adicionar nova parcela
+      const updateData: any = { total_value: newTotal };
+      if (contract?.status === "completed") {
+        updateData.status = "active";
+      }
+      await supabase.from("contracts").update(updateData).eq("id", contractId);
 
       setInstallments((prev) => [...prev, newInst]);
       setCommissions((prev) => [...prev, ...newCommissions]);
-      setContract((prev: any) => ({ ...prev, total_value: newTotal }));
+      setContract((prev: any) => ({ ...prev, total_value: newTotal, ...(contract?.status === "completed" ? { status: "active" } : {}) }));
 
       startEditingInstallment(newInst);
 
