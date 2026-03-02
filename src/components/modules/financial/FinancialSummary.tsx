@@ -84,6 +84,11 @@ export function FinancialSummary() {
   const [receitasModalMonth, setReceitasModalMonth] = useState<string | null>(null);
   const [receitasFilterPaid, setReceitasFilterPaid] = useState(false);
 
+  // Estado do Modal de Dividendos (resultado por participação)
+  const [dividendosModalOpen, setDividendosModalOpen] = useState(false);
+  const [dividendosModalMonth, setDividendosModalMonth] = useState<string | null>(null);
+  const [dividendosResultado, setDividendosResultado] = useState<number>(0);
+
   // Datas mínimas e máximas baseadas nos dados
   const [minDate, setMinDate] = useState<Date | undefined>();
   const [maxDate, setMaxDate] = useState<Date | undefined>();
@@ -687,9 +692,14 @@ export function FinancialSummary() {
                       <TableCell
                         key={m}
                         className={cn(
-                          "text-right font-bold",
+                          "text-right font-bold cursor-pointer hover:bg-secondary hover:text-primary transition-colors",
                           (totals[m] || 0) >= 0 ? "text-[#E8BD27]" : "text-red-500",
                         )}
+                        onClick={() => {
+                          setDividendosModalMonth(m);
+                          setDividendosResultado(totals[m] || 0);
+                          setDividendosModalOpen(true);
+                        }}
                       >
                         {formatCurrency(totals[m] || 0)}
                       </TableCell>
@@ -806,6 +816,16 @@ export function FinancialSummary() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* MODAL DE DIVIDENDOS / PARTICIPAÇÃO */}
+      {dividendosModalOpen && dividendosModalMonth && (
+        <DividendosModal
+          open={dividendosModalOpen}
+          onOpenChange={setDividendosModalOpen}
+          resultado={dividendosResultado}
+          monthLabel={getMonthLabel(dividendosModalMonth)}
+        />
       )}
 
       {/* MODAL DE DETALHES DA COMISSÃO */}
@@ -987,6 +1007,106 @@ function CommissionDetailDialog({
                 Nenhum detalhe encontrado.
               </div>
             )}
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// --- MODAL DE DIVIDENDOS ---
+function DividendosModal({
+  open,
+  onOpenChange,
+  resultado,
+  monthLabel,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  resultado: number;
+  monthLabel: string;
+}) {
+  const [employees, setEmployees] = useState<{ id: string; name: string; perc_participacao: number }[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchEmployees() {
+      try {
+        const { data, error } = await supabase
+          .from("employees")
+          .select("id, name, perc_participacao")
+          .not("perc_participacao", "is", null)
+          .gt("perc_participacao", 0)
+          .order("name");
+        if (error) throw error;
+        setEmployees(data || []);
+      } catch (err) {
+        console.error("Erro ao buscar employees:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchEmployees();
+  }, []);
+
+  const formatCurrency = (val: number) =>
+    new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(val);
+
+  const totalPerc = employees.reduce((sum, e) => sum + e.perc_participacao, 0);
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-[500px] bg-card border-border">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <DollarSign className="h-5 w-5 text-primary" />
+            Dividendos — {monthLabel}
+          </DialogTitle>
+          <p className="text-sm text-muted-foreground">
+            Resultado: <span className={cn("font-bold", resultado >= 0 ? "text-[#E8BD27]" : "text-red-500")}>{formatCurrency(resultado)}</span>
+          </p>
+        </DialogHeader>
+
+        {loading ? (
+          <div className="flex justify-center py-8">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        ) : employees.length === 0 ? (
+          <div className="text-center py-8 text-muted-foreground">
+            Nenhum membro com % de participação cadastrado.
+          </div>
+        ) : (
+          <div className="space-y-1">
+            {employees.map((emp) => {
+              const share = (emp.perc_participacao / 100) * resultado;
+              return (
+                <div
+                  key={emp.id}
+                  className="flex items-center justify-between px-4 py-3 rounded-lg bg-muted/30 border border-border/30"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">
+                      {emp.name.substring(0, 2).toUpperCase()}
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium">{emp.name}</p>
+                      <p className="text-xs text-muted-foreground">{emp.perc_participacao}% de participação</p>
+                    </div>
+                  </div>
+                  <span className={cn("text-sm font-bold", share >= 0 ? "text-emerald-500" : "text-red-500")}>
+                    {formatCurrency(share)}
+                  </span>
+                </div>
+              );
+            })}
+
+            {/* Total */}
+            <div className="flex items-center justify-between px-4 py-3 mt-2 border-t border-border/50">
+              <span className="text-sm text-muted-foreground font-medium">Total distribuído ({totalPerc}%)</span>
+              <span className={cn("text-sm font-bold", resultado >= 0 ? "text-[#E8BD27]" : "text-red-500")}>
+                {formatCurrency((totalPerc / 100) * resultado)}
+              </span>
+            </div>
           </div>
         )}
       </DialogContent>
