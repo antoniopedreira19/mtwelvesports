@@ -146,12 +146,21 @@ export function FinancialSummary() {
         return;
       }
 
-      // Filtro global "apenas pagos": para receitas e comissões, só incluir status === "paid"
+      // Filtro global "apenas pagos": receitas com status paid + comissões de parcelas pagas
       if (onlyPaidGlobal) {
         const isReceita = record.direction === "entrada";
         const isComissao = record.direction !== "entrada" && record.type === "comissao";
-        if ((isReceita || isComissao) && record.status !== "paid") {
+        if (isReceita && record.status !== "paid") {
           return;
+        }
+        if (isComissao) {
+          // Mostrar comissão apenas se a parcela correspondente (mesmo contract_id + date) foi paga
+          const relatedInstallment = records.find(
+            (r) => r.direction === "entrada" && r.type === "installment" && r.contract_id === record.contract_id && r.date === record.date
+          );
+          if (!relatedInstallment || relatedInstallment.status !== "paid") {
+            return;
+          }
         }
       }
 
