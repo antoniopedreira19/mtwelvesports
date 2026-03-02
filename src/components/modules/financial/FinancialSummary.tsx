@@ -899,73 +899,104 @@ function CommissionDetailDialog({
           </div>
         ) : (
           <div className="rounded-md border border-border/50 overflow-auto flex-1 min-h-0">
-            <Table>
-              <TableHeader className="bg-muted/30">
-                <TableRow>
-                  <TableHead>Fonte (Cliente)</TableHead>
-                  <TableHead className="text-right">Valor da Parcela</TableHead>
-                  <TableHead className="text-right">Comissão</TableHead>
-                  <TableHead className="text-center w-[100px]">Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {details.map((item, i) => (
-                  <TableRow key={item.id || i} className="hover:bg-muted/5">
-                    <TableCell className="font-medium">
-                      {item.contracts?.clients?.name || "Cliente N/A"}
-                      {item.installments?.payment_date && (
-                        <span className="block text-xs text-muted-foreground">
-                          Venc: {format(new Date(item.installments.payment_date), "dd/MM")}
-                        </span>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-right text-muted-foreground">
-                      {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(
-                        item.installments?.value || 0,
-                      )}
-                    </TableCell>
-                    <TableCell className="text-right font-bold text-emerald-500">
-                      {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(item.value || 0)}
-                      <span className="block text-xs text-muted-foreground font-normal">({item.percentage}%)</span>
-                    </TableCell>
-                    <TableCell className="text-center">
-                      {item.status === "paid" ? (
-                        <span className="inline-flex items-center rounded-full bg-emerald-500/10 px-2 py-1 text-xs font-medium text-emerald-500 ring-1 ring-inset ring-emerald-500/20">
-                          Pago
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center rounded-full bg-yellow-500/10 px-2 py-1 text-xs font-medium text-yellow-600 ring-1 ring-inset ring-yellow-500/20">
-                          Pendente
-                        </span>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))}
-                {details.length > 0 && (
-                  <TableRow className="bg-muted/10 font-bold">
-                    <TableCell>Total</TableCell>
-                    <TableCell className="text-right">
-                      {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(
-                        details.reduce((acc, curr) => acc + (curr.installments?.value || 0), 0),
-                      )}
-                    </TableCell>
-                    <TableCell className="text-right text-emerald-500">
-                      {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(
-                        details.reduce((acc, curr) => acc + (curr.value || 0), 0),
-                      )}
-                    </TableCell>
-                    <TableCell></TableCell>
-                  </TableRow>
-                )}
-                {details.length === 0 && (
-                  <TableRow>
-                    <TableCell colSpan={4} className="text-center py-6 text-muted-foreground">
-                      Nenhum detalhe encontrado.
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
+            {(() => {
+              // Agrupar por mês
+              const grouped: Record<string, any[]> = {};
+              details.forEach((item) => {
+                const payDate = item.installments?.payment_date;
+                const mk = payDate ? format(new Date(payDate), "yyyy-MM") : "sem-data";
+                if (!grouped[mk]) grouped[mk] = [];
+                grouped[mk].push(item);
+              });
+              const sortedMonths = Object.keys(grouped).sort();
+
+              return sortedMonths.map((mk) => {
+                const items = grouped[mk];
+                const monthTotal = items.reduce((acc: number, curr: any) => acc + (curr.value || 0), 0);
+                const monthInstTotal = items.reduce((acc: number, curr: any) => acc + (curr.installments?.value || 0), 0);
+                const mLabel = mk === "sem-data" ? "Sem data" : (() => {
+                  const [y, m] = mk.split("-");
+                  const d = new Date(Number(y), Number(m) - 1, 1);
+                  const l = format(d, "MMMM/yyyy", { locale: ptBR });
+                  return l.charAt(0).toUpperCase() + l.slice(1);
+                })();
+
+                return (
+                  <div key={mk} className="mb-3 last:mb-0">
+                    <div className="px-3 py-1.5 bg-muted/40 text-xs font-semibold text-muted-foreground uppercase tracking-wide border-b border-border/30">
+                      {mLabel}
+                    </div>
+                    <Table>
+                      <TableHeader className="bg-muted/20">
+                        <TableRow>
+                          <TableHead>Fonte (Cliente)</TableHead>
+                          <TableHead className="text-right">Valor da Parcela</TableHead>
+                          <TableHead className="text-right">Comissão</TableHead>
+                          <TableHead className="text-center w-[100px]">Status</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {items.map((item: any, i: number) => (
+                          <TableRow key={item.id || i} className="hover:bg-muted/5">
+                            <TableCell className="font-medium">
+                              {item.contracts?.clients?.name || "Cliente N/A"}
+                              {item.installments?.payment_date && (
+                                <span className="block text-xs text-muted-foreground">
+                                  Venc: {format(new Date(item.installments.payment_date), "dd/MM")}
+                                </span>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-right text-muted-foreground">
+                              {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(item.installments?.value || 0)}
+                            </TableCell>
+                            <TableCell className="text-right font-bold text-emerald-500">
+                              {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(item.value || 0)}
+                              <span className="block text-xs text-muted-foreground font-normal">({item.percentage}%)</span>
+                            </TableCell>
+                            <TableCell className="text-center">
+                              {item.status === "paid" ? (
+                                <span className="inline-flex items-center rounded-full bg-emerald-500/10 px-2 py-1 text-xs font-medium text-emerald-500 ring-1 ring-inset ring-emerald-500/20">
+                                  Pago
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center rounded-full bg-yellow-500/10 px-2 py-1 text-xs font-medium text-yellow-600 ring-1 ring-inset ring-yellow-500/20">
+                                  Pendente
+                                </span>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                        <TableRow className="bg-muted/10 font-bold">
+                          <TableCell>Subtotal</TableCell>
+                          <TableCell className="text-right">
+                            {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(monthInstTotal)}
+                          </TableCell>
+                          <TableCell className="text-right text-emerald-500">
+                            {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(monthTotal)}
+                          </TableCell>
+                          <TableCell></TableCell>
+                        </TableRow>
+                      </TableBody>
+                    </Table>
+                  </div>
+                );
+              });
+            })()}
+            {details.length > 0 && (
+              <div className="px-3 py-2 bg-muted/20 border-t border-border font-bold flex justify-between text-sm">
+                <span>Total Geral</span>
+                <span className="text-emerald-500">
+                  {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(
+                    details.reduce((acc: number, curr: any) => acc + (curr.value || 0), 0)
+                  )}
+                </span>
+              </div>
+            )}
+            {details.length === 0 && (
+              <div className="text-center py-6 text-muted-foreground">
+                Nenhum detalhe encontrado.
+              </div>
+            )}
           </div>
         )}
       </DialogContent>
