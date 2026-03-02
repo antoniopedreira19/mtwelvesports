@@ -967,7 +967,7 @@ function CommissionDetailDialog({
                           </TableRow>
                         ))}
                         <TableRow className="bg-muted/10 font-bold">
-                          <TableCell>Subtotal</TableCell>
+                          <TableCell>Total</TableCell>
                           <TableCell className="text-right">
                             {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(monthInstTotal)}
                           </TableCell>
@@ -982,16 +982,6 @@ function CommissionDetailDialog({
                 );
               });
             })()}
-            {details.length > 0 && (
-              <div className="px-3 py-2 bg-muted/20 border-t border-border font-bold flex justify-between text-sm">
-                <span>Total Geral</span>
-                <span className="text-emerald-500">
-                  {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(
-                    details.reduce((acc: number, curr: any) => acc + (curr.value || 0), 0)
-                  )}
-                </span>
-              </div>
-            )}
             {details.length === 0 && (
               <div className="text-center py-6 text-muted-foreground">
                 Nenhum detalhe encontrado.
