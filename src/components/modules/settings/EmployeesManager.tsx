@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Plus, Trash2, User, Mail, Briefcase, Loader2 } from "lucide-react";
+import { Plus, Trash2, Mail, Briefcase, Loader2, Pencil, Percent } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -41,37 +41,35 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { toast } from "sonner";
 
-// Definição do Tipo de Funcionário
 interface Employee {
   id: string;
   name: string;
   role: string | null;
   email: string | null;
+  perc_participacao: number | null;
 }
 
-// Schema de Validação
 const formSchema = z.object({
   name: z.string().min(2, "Nome é obrigatório"),
   role: z.string().min(2, "Cargo/Função é obrigatória"),
   email: z.string().email("E-mail inválido").optional().or(z.literal("")),
+  perc_participacao: z.coerce.number().min(0).max(100).optional(),
 });
+
+type FormValues = z.infer<typeof formSchema>;
 
 export function EmployeesManager() {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
 
-  const form = useForm<z.infer<typeof formSchema>>({
+  const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-      name: "",
-      role: "",
-      email: "",
-    },
+    defaultValues: { name: "", role: "", email: "", perc_participacao: undefined },
   });
 
-  // Busca funcionários ao carregar
   useEffect(() => {
     fetchEmployees();
   }, []);
@@ -82,7 +80,6 @@ export function EmployeesManager() {
         .from("employees")
         .select("*")
         .order("name", { ascending: true });
-
       if (error) throw error;
       setEmployees(data || []);
     } catch (error) {
@@ -93,21 +90,50 @@ export function EmployeesManager() {
     }
   }
 
-  async function onSubmit(values: z.infer<typeof formSchema>) {
+  function openCreate() {
+    setEditingEmployee(null);
+    form.reset({ name: "", role: "", email: "", perc_participacao: undefined });
+    setIsDialogOpen(true);
+  }
+
+  function openEdit(emp: Employee) {
+    setEditingEmployee(emp);
+    form.reset({
+      name: emp.name,
+      role: emp.role || "",
+      email: emp.email || "",
+      perc_participacao: emp.perc_participacao ?? undefined,
+    });
+    setIsDialogOpen(true);
+  }
+
+  async function onSubmit(values: FormValues) {
     setIsSaving(true);
     try {
-      const { error } = await supabase.from("employees").insert({
+      const payload = {
         name: values.name,
         role: values.role,
         email: values.email || null,
-      });
+        perc_participacao: values.perc_participacao ?? null,
+      };
 
-      if (error) throw error;
+      if (editingEmployee) {
+        const { error } = await supabase
+          .from("employees")
+          .update(payload)
+          .eq("id", editingEmployee.id);
+        if (error) throw error;
+        toast.success("Membro atualizado com sucesso!");
+      } else {
+        const { error } = await supabase.from("employees").insert(payload);
+        if (error) throw error;
+        toast.success("Membro adicionado com sucesso!");
+      }
 
-      toast.success("Membro adicionado com sucesso!");
       setIsDialogOpen(false);
       form.reset();
-      fetchEmployees(); // Atualiza a lista
+      setEditingEmployee(null);
+      fetchEmployees();
     } catch (error) {
       console.error(error);
       toast.error("Erro ao salvar membro.");
@@ -120,7 +146,6 @@ export function EmployeesManager() {
     try {
       const { error } = await supabase.from("employees").delete().eq("id", id);
       if (error) throw error;
-      
       toast.success("Membro removido.");
       fetchEmployees();
     } catch (error) {
@@ -138,19 +163,24 @@ export function EmployeesManager() {
             Gerencie as pessoas elegíveis para receber comissões.
           </CardDescription>
         </div>
-        
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+
+        <Dialog open={isDialogOpen} onOpenChange={(open) => {
+          setIsDialogOpen(open);
+          if (!open) setEditingEmployee(null);
+        }}>
           <DialogTrigger asChild>
-            <Button className="gold-gradient text-primary-foreground font-semibold">
+            <Button className="gold-gradient text-primary-foreground font-semibold" onClick={openCreate}>
               <Plus className="h-4 w-4 mr-2" />
               Novo Membro
             </Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
-              <DialogTitle>Adicionar Membro</DialogTitle>
+              <DialogTitle>{editingEmployee ? "Editar Membro" : "Adicionar Membro"}</DialogTitle>
               <DialogDescription>
-                Cadastre um agente ou parceiro para vincular a contratos.
+                {editingEmployee
+                  ? "Atualize os dados do membro da equipe."
+                  : "Cadastre um agente ou parceiro para vincular a contratos."}
               </DialogDescription>
             </DialogHeader>
             <Form {...form}>
@@ -194,10 +224,34 @@ export function EmployeesManager() {
                     </FormItem>
                   )}
                 />
+                <FormField
+                  control={form.control}
+                  name="perc_participacao"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>% de Participação / Dividendos</FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                          <Input
+                            type="number"
+                            min={0}
+                            max={100}
+                            step={0.5}
+                            placeholder="Ex: 10"
+                            {...field}
+                            value={field.value ?? ""}
+                          />
+                          <Percent className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
                 <DialogFooter>
                   <Button type="submit" disabled={isSaving} className="w-full gold-gradient">
                     {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Salvar Cadastro
+                    {editingEmployee ? "Salvar Alterações" : "Salvar Cadastro"}
                   </Button>
                 </DialogFooter>
               </form>
@@ -205,7 +259,7 @@ export function EmployeesManager() {
           </DialogContent>
         </Dialog>
       </CardHeader>
-      
+
       <CardContent>
         {isLoading ? (
           <div className="flex justify-center py-8">
@@ -222,6 +276,7 @@ export function EmployeesManager() {
                 <TableRow className="bg-muted/50">
                   <TableHead>Nome</TableHead>
                   <TableHead>Função</TableHead>
+                  <TableHead>% Participação</TableHead>
                   <TableHead>Contato</TableHead>
                   <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
@@ -242,6 +297,13 @@ export function EmployeesManager() {
                       </div>
                     </TableCell>
                     <TableCell>
+                      {employee.perc_participacao != null ? (
+                        <span className="text-muted-foreground">{employee.perc_participacao}%</span>
+                      ) : (
+                        <span className="text-muted-foreground/50">—</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
                       {employee.email && (
                         <div className="flex items-center gap-2 text-muted-foreground text-sm">
                           <Mail className="h-3 w-3" />
@@ -250,14 +312,24 @@ export function EmployeesManager() {
                       )}
                     </TableCell>
                     <TableCell className="text-right">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="text-muted-foreground hover:text-red-500"
-                        onClick={() => handleDelete(employee.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      <div className="flex items-center justify-end gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="text-muted-foreground hover:text-foreground"
+                          onClick={() => openEdit(employee)}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="text-muted-foreground hover:text-red-500"
+                          onClick={() => handleDelete(employee.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
