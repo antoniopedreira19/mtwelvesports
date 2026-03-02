@@ -1,51 +1,24 @@
 
 
-## Plano: Nova aba "Clientes Ativos" na página DRE
+## Plano: Agrupar comissões por mês na página Gestão de Contratos
 
-### 1. Migração SQL — Novos campos na tabela `clients`
+### Contexto
+Na página `/gestao-contratos`, ao expandir um cliente e acessar a aba "Comissões", todas as comissões aparecem em uma lista plana. O objetivo é agrupá-las por mês (usando a data de pagamento da parcela vinculada), seguindo o mesmo padrão visual já usado no `ContractDetailDialog`.
 
-Adicionar campos para informações de pagador:
+### Alteração
 
-```sql
-ALTER TABLE clients ADD COLUMN payer_name text;
-ALTER TABLE clients ADD COLUMN payer_email text;
-ALTER TABLE clients ADD COLUMN payer_phone text;
-ALTER TABLE clients ADD COLUMN payer_relationship text DEFAULT 'self'; -- 'self', 'parent', 'guardian', 'other'
-ALTER TABLE clients ADD COLUMN payment_method text; -- 'pix', 'transfer', 'credit_card', 'boleto'
-```
+**Arquivo: `src/pages/ClientesAtivos.tsx`** (função `renderClientCard`, aba `comissoes`, linhas ~462-487)
 
-### 2. Novo componente `ActiveClientsTab`
+1. Criar a lógica de agrupamento por mês: para cada comissão em `allCommissions`, buscar a parcela vinculada via `installmentId` e usar seu `paymentDate` para determinar o mês. Agrupar em um `Map<string, { label, items }>` e ordenar cronologicamente.
 
-`src/components/modules/financial/ActiveClientsTab.tsx`
+2. Substituir a tabela única por iteração sobre os grupos mensais, cada um com:
+   - Cabeçalho com o nome do mês (ex: "Janeiro 2025") e um `Badge` com o total do mês
+   - Tabela individual com as comissões daquele mês (mesmas colunas: Beneficiário, %, Valor, Status, Ação)
 
-- Hook `useClientContracts` já existente traz clientes com contratos ativos/completed
-- Buscar também dados do cliente (email, phone, payer_*) via query adicional
-- Layout: lista de cards expansíveis, um por cliente ativo
+O visual seguirá o padrão do `ContractDetailDialog`: um `div` por grupo com título + badge de total, e tabela com borda arredondada abaixo.
 
-**Cada card do cliente mostra:**
-- Header: Avatar, Nome, Escola, Badge de status (ativo/concluído)
-- Seção "Dados do Pagador": nome do pagador, email, telefone, relacionamento (ele mesmo / parente), método de pagamento — editáveis inline
-- Seção "Contrato": valor total, total pago, total pendente (dados do hook existente), dia de vencimento
-- Seção "Documentos": placeholder para upload futuro (MVP mostra área vazia com ícone)
-
-**UI Premium:**
-- Cards com `rounded-2xl`, `shadow-sm`, hover elevation
-- Accordion/Collapsible para expandir detalhes
-- Ícones contextuais (User, Mail, Phone, CreditCard, FileText)
-- Badges coloridos para status de pagamento
-- Botão de edição inline para dados do pagador
-
-### 3. Atualizar `Financeiro.tsx`
-
-- Adicionar terceira tab "Clientes Ativos" no TabsList (grid-cols-3)
-- Importar e renderizar `ActiveClientsTab` no novo `TabsContent`
-- Atualizar subtítulo da página
-
-### 4. Resumo dos arquivos
-
-| Arquivo | Ação |
-|---------|------|
-| Migração SQL | Adicionar 5 colunas de pagador na tabela `clients` |
-| `src/components/modules/financial/ActiveClientsTab.tsx` | **Novo** — componente da aba |
-| `src/pages/Financeiro.tsx` | Adicionar terceira tab |
+### Detalhes técnicos
+- A data de cada comissão será resolvida buscando a parcela com mesmo `id` em `allInstallments` (já disponível no escopo)
+- Formato do mês: `format(date, "MMMM yyyy", { locale: ptBR })` com capitalização
+- Comissões sem parcela vinculada serão agrupadas sob o mês da `created_at` ou um grupo "Sem data"
 
