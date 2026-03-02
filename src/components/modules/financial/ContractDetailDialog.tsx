@@ -11,6 +11,7 @@ import {
   FileText,
   Pencil,
   Plus,
+  Trash2,
   User,
   X,
   CalendarIcon,
@@ -427,6 +428,52 @@ export function ContractDetailDialog({ contractId, open, onOpenChange, onContrac
     }
   };
 
+  const deleteInstallment = async (installmentId: string) => {
+    if (!contractId) return;
+    const inst = installments.find((i) => i.id === installmentId);
+    if (!inst) return;
+
+    // Não permitir excluir parcelas pagas
+    if (inst.status === "paid") {
+      toast.error("Não é possível excluir uma parcela já paga.");
+      return;
+    }
+
+    // Não permitir excluir se for a última parcela
+    if (installments.length <= 1) {
+      toast.error("O contrato precisa ter pelo menos uma parcela.");
+      return;
+    }
+
+    try {
+      // 1. Deletar comissões vinculadas a esta parcela
+      await supabase.from("commissions").delete().eq("installment_id", installmentId);
+
+      // 2. Deletar a parcela
+      const { error } = await supabase.from("installments").delete().eq("id", installmentId);
+      if (error) throw error;
+
+      // 3. Recalcular total do contrato
+      const remainingInstallments = installments.filter((i) => i.id !== installmentId);
+      const newTotal = remainingInstallments.reduce((acc, curr) => acc + Number(curr.value), 0);
+      await supabase.from("contracts").update({ total_value: newTotal }).eq("id", contractId);
+
+      // 4. Atualizar estado local
+      setInstallments(remainingInstallments);
+      setCommissions((prev) => prev.filter((c) => c.installment_id !== installmentId));
+      setContract((prev: any) => ({ ...prev, total_value: newTotal }));
+
+      // 5. Verificar se contrato deve ser concluído
+      await checkAndCompleteContract(contractId);
+
+      toast.success("Parcela excluída com sucesso.");
+      if (onContractUpdated) onContractUpdated();
+    } catch (error) {
+      console.error(error);
+      toast.error("Erro ao excluir parcela.");
+    }
+  };
+
   if (!contract) return null;
 
   return (
@@ -667,6 +714,25 @@ export function ContractDetailDialog({ contractId, open, onOpenChange, onContrac
                               >
                                 <Pencil className="h-4 w-4 text-muted-foreground" />
                               </Button>
+                              {inst.status !== "paid" && installments.length > 1 && (
+                                <TooltipProvider>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Button
+                                        size="icon"
+                                        variant="ghost"
+                                        className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-500/10"
+                                        onClick={() => deleteInstallment(inst.id)}
+                                      >
+                                        <Trash2 className="h-4 w-4" />
+                                      </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p>Excluir Parcela</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                              )}
                             </div>
                           )}
                         </TableCell>
