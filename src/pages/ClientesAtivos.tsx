@@ -43,6 +43,9 @@ export default function ClientesAtivos() {
   const now = new Date();
   const [selectedMonth, setSelectedMonth] = useState(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`);
 
+  // Comissões tab month filter
+  const [comissoesMonth, setComissoesMonth] = useState("all");
+
   // Contract creation state
   const [isClientSelectorOpen, setIsClientSelectorOpen] = useState(false);
   const [isContractModalOpen, setIsContractModalOpen] = useState(false);
@@ -570,6 +573,10 @@ export default function ClientesAtivos() {
               </span>
             )}
           </TabsTrigger>
+          <TabsTrigger value="comissoes-tab" className="px-5 py-2 text-sm font-medium data-[state=active]:bg-[#E8BD27] data-[state=active]:text-black data-[state=active]:shadow-md transition-all">
+            <Users className="h-4 w-4 mr-2" />
+            Comissões
+          </TabsTrigger>
         </TabsList>
 
         {/* ===== Contratos Tab ===== */}
@@ -754,6 +761,211 @@ export default function ClientesAtivos() {
               ))}
             </div>
           )}
+        </TabsContent>
+
+        {/* ===== Comissões Tab ===== */}
+        <TabsContent value="comissoes-tab" className="mt-6 space-y-6">
+          {(() => {
+            // Collect all pending commissions across all clients
+            const allPendingCommissions: {
+              id: string;
+              employeeName: string;
+              percentage: number;
+              value: number;
+              status: string;
+              installmentId: string | null;
+              contractId: string;
+              clientName: string;
+              monthKey: string;
+              monthLabel: string;
+            }[] = [];
+
+            if (clientsData) {
+              for (const client of clientsData) {
+                for (const contract of client.contracts) {
+                  for (const comm of contract.commissions) {
+                    if (comm.status !== "pending") continue;
+                    let monthKey = "sem-data";
+                    let monthLabel = "Sem data";
+                    if (comm.installmentId) {
+                      const inst = contract.installments.find((i) => i.id === comm.installmentId);
+                      if (inst) {
+                        const d = parseISO(inst.paymentDate);
+                        monthKey = format(d, "yyyy-MM");
+                        const raw = format(d, "MMMM yyyy", { locale: ptBR });
+                        monthLabel = raw.charAt(0).toUpperCase() + raw.slice(1);
+                      }
+                    }
+                    allPendingCommissions.push({
+                      ...comm,
+                      contractId: contract.id,
+                      clientName: client.clientName,
+                      monthKey,
+                      monthLabel,
+                    });
+                  }
+                }
+              }
+            }
+
+            // Get available months for filter
+            const monthOptions = Array.from(new Set(allPendingCommissions.map((c) => c.monthKey))).sort();
+
+            // Filter by selected month
+            const filtered = comissoesMonth === "all"
+              ? allPendingCommissions
+              : allPendingCommissions.filter((c) => c.monthKey === comissoesMonth);
+
+            // Group by employee
+            const employeeMap = new Map<string, typeof filtered>();
+            for (const comm of filtered) {
+              if (!employeeMap.has(comm.employeeName)) employeeMap.set(comm.employeeName, []);
+              employeeMap.get(comm.employeeName)!.push(comm);
+            }
+
+            const totalPending = filtered.reduce((s, c) => s + c.value, 0);
+
+            return (
+              <>
+                {/* Filters */}
+                <div className="flex items-center gap-3">
+                  <Calendar className="h-4 w-4 text-muted-foreground" />
+                  <Select value={comissoesMonth} onValueChange={setComissoesMonth}>
+                    <SelectTrigger className="w-[220px] bg-card">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos os meses</SelectItem>
+                      {monthOptions.map((m) => {
+                        if (m === "sem-data") return <SelectItem key={m} value={m}>Sem data</SelectItem>;
+                        const [y, mo] = m.split("-").map(Number);
+                        const d = new Date(y, mo - 1, 1);
+                        const label = format(d, "MMMM yyyy", { locale: ptBR });
+                        return <SelectItem key={m} value={m}>{label.charAt(0).toUpperCase() + label.slice(1)}</SelectItem>;
+                      })}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* KPI */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <Card className="border-border/50">
+                    <CardContent className="p-4">
+                      <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 rounded-lg bg-amber-500/10 flex items-center justify-center">
+                          <CircleDollarSign className="h-5 w-5 text-amber-500" />
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground">Total Pendente</p>
+                          <p className="text-lg font-bold">{formatCurrency(totalPending)}</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                  <Card className="border-border/50">
+                    <CardContent className="p-4">
+                      <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 rounded-lg bg-blue-500/10 flex items-center justify-center">
+                          <Users className="h-5 w-5 text-blue-500" />
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground">Comissionados</p>
+                          <p className="text-lg font-bold">{employeeMap.size}</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Grouped by employee */}
+                {dataLoading ? (
+                  <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-muted-foreground" /></div>
+                ) : employeeMap.size === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-16 text-muted-foreground border-2 border-dashed border-border/50 rounded-xl">
+                    <CheckCircle2 className="w-16 h-16 mb-4 opacity-20" />
+                    <h3 className="text-lg font-medium mb-2">Nenhuma comissão pendente</h3>
+                    <p className="text-sm">Todas as comissões estão pagas.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {Array.from(employeeMap.entries())
+                      .sort((a, b) => a[0].localeCompare(b[0]))
+                      .map(([employeeName, comms]) => {
+                        const empTotal = comms.reduce((s, c) => s + c.value, 0);
+
+                        // Group by month within this employee
+                        const monthGroups = new Map<string, { label: string; items: typeof comms }>();
+                        for (const c of comms) {
+                          if (!monthGroups.has(c.monthKey)) monthGroups.set(c.monthKey, { label: c.monthLabel, items: [] });
+                          monthGroups.get(c.monthKey)!.items.push(c);
+                        }
+                        const sortedMonths = Array.from(monthGroups.entries()).sort((a, b) => b[0].localeCompare(a[0]));
+
+                        return (
+                          <div key={employeeName} className="rounded-xl border border-border/50 bg-card overflow-hidden">
+                            {/* Employee header */}
+                            <div className="flex items-center gap-4 p-4 border-b border-border/30">
+                              <Avatar className="h-10 w-10 shrink-0">
+                                <AvatarFallback className="bg-[#E8BD27]/10 text-[#E8BD27] font-semibold">
+                                  {employeeName.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div className="flex-1 min-w-0">
+                                <span className="font-semibold text-foreground">{employeeName}</span>
+                              </div>
+                              <div className="text-right shrink-0">
+                                <p className="text-xs text-muted-foreground">Total pendente</p>
+                                <p className="font-bold text-sm">{formatCurrency(empTotal)}</p>
+                              </div>
+                            </div>
+
+                            {/* Months */}
+                            <div className="p-4 space-y-4">
+                              {sortedMonths.map(([mKey, mGroup]) => (
+                                <div key={mKey}>
+                                  <div className="flex items-center justify-between mb-2">
+                                    <h4 className="text-sm font-semibold">{mGroup.label}</h4>
+                                    <Badge variant="secondary" className="text-xs">
+                                      {formatCurrency(mGroup.items.reduce((s, c) => s + c.value, 0))}
+                                    </Badge>
+                                  </div>
+                                  <div className="rounded-lg border border-border/30 overflow-hidden">
+                                    <Table>
+                                      <TableHeader>
+                                        <TableRow className="hover:bg-transparent">
+                                          <TableHead className="text-xs h-9">Cliente</TableHead>
+                                          <TableHead className="text-xs h-9">%</TableHead>
+                                          <TableHead className="text-xs h-9">Valor</TableHead>
+                                          <TableHead className="text-xs h-9 text-right">Ação</TableHead>
+                                        </TableRow>
+                                      </TableHeader>
+                                      <TableBody>
+                                        {mGroup.items.map((comm) => (
+                                          <TableRow key={comm.id}>
+                                            <TableCell className="text-sm py-2 font-medium">{comm.clientName}</TableCell>
+                                            <TableCell className="text-sm py-2 text-muted-foreground">{comm.percentage}%</TableCell>
+                                            <TableCell className="text-sm py-2">{formatCurrency(comm.value)}</TableCell>
+                                            <TableCell className="text-right py-2">
+                                              <Button size="sm" variant="ghost" className="h-7 text-xs text-emerald-500 hover:text-emerald-600 hover:bg-emerald-500/10" onClick={() => quickPayCommission(comm.id, comm.contractId)}>
+                                                <Check className="h-3 w-3 mr-1" />Pagar
+                                              </Button>
+                                            </TableCell>
+                                          </TableRow>
+                                        ))}
+                                      </TableBody>
+                                    </Table>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })}
+                  </div>
+                )}
+              </>
+            );
+          })()}
         </TabsContent>
       </Tabs>
 
