@@ -460,30 +460,75 @@ export default function ClientesAtivos() {
                 </div>
               </TabsContent>
               <TabsContent value="comissoes" className="mt-0 px-5 pb-4">
-                <div className="rounded-lg border border-border/30 overflow-hidden mt-3">
-                  <Table>
-                    <TableHeader><TableRow className="hover:bg-transparent"><TableHead className="text-xs h-9">Beneficiário</TableHead><TableHead className="text-xs h-9">%</TableHead><TableHead className="text-xs h-9">Valor</TableHead><TableHead className="text-xs h-9">Status</TableHead><TableHead className="text-xs h-9 text-right">Ação</TableHead></TableRow></TableHeader>
-                    <TableBody>
-                      {allCommissions.length === 0 ? (
+                {allCommissions.length === 0 ? (
+                  <div className="rounded-lg border border-border/30 overflow-hidden mt-3">
+                    <Table>
+                      <TableBody>
                         <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground text-sm py-6">Nenhuma comissão</TableCell></TableRow>
-                      ) : allCommissions.map((comm) => (
-                        <TableRow key={comm.id}>
-                          <TableCell className="text-sm py-2 font-medium">{comm.employeeName}</TableCell>
-                          <TableCell className="text-sm py-2 text-muted-foreground">{comm.percentage}%</TableCell>
-                          <TableCell className="text-sm py-2">{formatCurrency(comm.value)}</TableCell>
-                          <TableCell className="py-2">{statusBadge(comm.status)}</TableCell>
-                          <TableCell className="text-right py-2">
-                            {comm.status === "pending" && (
-                              <Button size="sm" variant="ghost" className="h-7 text-xs text-emerald-500 hover:text-emerald-600 hover:bg-emerald-500/10" onClick={() => quickPayCommission(comm.id, comm.contractId)}>
-                                <Check className="h-3 w-3 mr-1" />Pagar
-                              </Button>
-                            )}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
+                      </TableBody>
+                    </Table>
+                  </div>
+                ) : (() => {
+                  // Group commissions by month using linked installment's paymentDate
+                  const groups = new Map<string, { label: string; sortKey: string; items: typeof allCommissions }>();
+                  for (const comm of allCommissions) {
+                    let dateStr: string | null = null;
+                    if (comm.installmentId) {
+                      const inst = allInstallments.find((i) => i.id === comm.installmentId);
+                      if (inst) dateStr = inst.paymentDate;
+                    }
+                    let key: string;
+                    let label: string;
+                    let sortKey: string;
+                    if (dateStr) {
+                      const d = parseISO(dateStr);
+                      key = format(d, "yyyy-MM");
+                      sortKey = key;
+                      const raw = format(d, "MMMM yyyy", { locale: ptBR });
+                      label = raw.charAt(0).toUpperCase() + raw.slice(1);
+                    } else {
+                      key = "sem-data";
+                      sortKey = "9999-99";
+                      label = "Sem data";
+                    }
+                    if (!groups.has(key)) groups.set(key, { label, sortKey, items: [] });
+                    groups.get(key)!.items.push(comm);
+                  }
+                  const sorted = Array.from(groups.entries()).sort((a, b) => a[1].sortKey.localeCompare(b[1].sortKey));
+                  return sorted.map(([key, group]) => {
+                    const groupTotal = group.items.reduce((s, c) => s + c.value, 0);
+                    return (
+                      <div key={key} className="mt-3">
+                        <div className="flex items-center justify-between mb-2">
+                          <h4 className="text-sm font-semibold">{group.label}</h4>
+                          <Badge variant="secondary" className="text-xs">{formatCurrency(groupTotal)}</Badge>
+                        </div>
+                        <div className="rounded-lg border border-border/30 overflow-hidden">
+                          <Table>
+                            <TableHeader><TableRow className="hover:bg-transparent"><TableHead className="text-xs h-9">Beneficiário</TableHead><TableHead className="text-xs h-9">%</TableHead><TableHead className="text-xs h-9">Valor</TableHead><TableHead className="text-xs h-9">Status</TableHead><TableHead className="text-xs h-9 text-right">Ação</TableHead></TableRow></TableHeader>
+                            <TableBody>
+                              {group.items.map((comm) => (
+                                <TableRow key={comm.id}>
+                                  <TableCell className="text-sm py-2 font-medium">{comm.employeeName}</TableCell>
+                                  <TableCell className="text-sm py-2 text-muted-foreground">{comm.percentage}%</TableCell>
+                                  <TableCell className="text-sm py-2">{formatCurrency(comm.value)}</TableCell>
+                                  <TableCell className="py-2">{statusBadge(comm.status)}</TableCell>
+                                  <TableCell className="text-right py-2">
+                                    {comm.status === "pending" && (
+                                      <Button size="sm" variant="ghost" className="h-7 text-xs text-emerald-500 hover:text-emerald-600 hover:bg-emerald-500/10" onClick={() => quickPayCommission(comm.id, comm.contractId)}>
+                                        <Check className="h-3 w-3 mr-1" />Pagar
+                                      </Button>
+                                    )}
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </div>
+                      </div>
+                    );
+                  });
+                })()}
               </TabsContent>
             </Tabs>
           </div>
