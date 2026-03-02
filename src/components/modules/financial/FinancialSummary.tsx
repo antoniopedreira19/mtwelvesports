@@ -68,6 +68,9 @@ export function FinancialSummary() {
     comissoes: false,
   });
 
+  // Filtro global "Apenas pagos" na matriz
+  const [onlyPaidGlobal, setOnlyPaidGlobal] = useState(false);
+
   // Estado do Modal de Detalhes (comissões)
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [selectedCellData, setSelectedCellData] = useState<{
@@ -143,6 +146,15 @@ export function FinancialSummary() {
         return;
       }
 
+      // Filtro global "apenas pagos": para receitas e comissões, só incluir status === "paid"
+      if (onlyPaidGlobal) {
+        const isReceita = record.direction === "entrada";
+        const isComissao = record.direction !== "entrada" && record.type === "comissao";
+        if ((isReceita || isComissao) && record.status !== "paid") {
+          return;
+        }
+      }
+
       const monthKey = format(recordMonth, "yyyy-MM");
       uniqueMonths.add(monthKey);
 
@@ -176,7 +188,7 @@ export function FinancialSummary() {
     const displayMonths = Array.from(uniqueMonths).sort();
 
     return { matrix, displayMonths, totals: grandTotals };
-  }, [records, startMonth, endMonth]);
+  }, [records, startMonth, endMonth, onlyPaidGlobal]);
 
   const toggleRow = (key: string) => {
     setExpandedRows((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -464,13 +476,27 @@ export function FinancialSummary() {
               <p className="text-xs text-muted-foreground mt-0.5">{getPeriodLabel()}</p>
             </div>
           </div>
-          <MonthRangeFilter
-            startMonth={startMonth}
-            endMonth={endMonth}
-            onRangeChange={handleRangeChange}
-            minDate={minDate}
-            maxDate={maxDate}
-          />
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setOnlyPaidGlobal(!onlyPaidGlobal)}
+              className={cn(
+                "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all",
+                onlyPaidGlobal
+                  ? "bg-emerald-500/15 text-emerald-500 ring-1 ring-emerald-500/30"
+                  : "bg-muted/50 text-muted-foreground hover:text-foreground"
+              )}
+            >
+              <CheckCircle2 className="w-3.5 h-3.5" />
+              Apenas pagos
+            </button>
+            <MonthRangeFilter
+              startMonth={startMonth}
+              endMonth={endMonth}
+              onRangeChange={handleRangeChange}
+              minDate={minDate}
+              maxDate={maxDate}
+            />
+          </div>
         </div>
         
         {/* Table content */}
