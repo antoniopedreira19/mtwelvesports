@@ -14,6 +14,7 @@ import Financeiro from "./pages/Financeiro";
 import ClientesAtivosFinanceiro from "./pages/ClientesAtivosFinanceiro";
 import Settings from "./pages/Settings";
 import Auth from "./pages/Auth";
+import AthletePortal from "./pages/AthletePortal";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -71,6 +72,15 @@ const App = () => (
               />
               {/* Both admin and member can access */}
               <Route path="/crm" element={<CRM />} />
+              {/* Client portal - only clients */}
+              <Route
+                path="/athlete-portal"
+                element={
+                  <RoleProtectedRoute allowedRoles={["client"]} fallbackPath="/crm">
+                    <AthletePortal />
+                  </RoleProtectedRoute>
+                }
+              />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>
