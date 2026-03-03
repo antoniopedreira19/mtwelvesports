@@ -112,6 +112,21 @@ export default function ClientesAtivos() {
   };
 
   const quickPayCommission = async (commissionId: string, contractId: string) => {
+    // Optimistic update
+    const previousData = queryClient.getQueryData(["client-contracts"]);
+    queryClient.setQueryData(["client-contracts"], (old: ClientContractData[] | undefined) => {
+      if (!old) return old;
+      return old.map((client) => ({
+        ...client,
+        contracts: client.contracts.map((contract) => ({
+          ...contract,
+          commissions: contract.commissions.map((comm) =>
+            comm.id === commissionId ? { ...comm, status: "paid" as const } : comm
+          ),
+        })),
+      }));
+    });
+
     try {
       const { error } = await supabase.from("commissions").update({ status: "paid" }).eq("id", commissionId);
       if (error) throw error;
@@ -119,7 +134,48 @@ export default function ClientesAtivos() {
       sonnerToast.success("Comissão paga!");
       refreshAll();
     } catch {
+      queryClient.setQueryData(["client-contracts"], previousData);
       sonnerToast.error("Erro ao pagar comissão.");
+    }
+  };
+
+  const quickPayAllCommissions = async (commissions: { id: string; contractId: string }[]) => {
+    if (commissions.length === 0) return;
+
+    // Optimistic update
+    const commissionIds = new Set(commissions.map((c) => c.id));
+    const previousData = queryClient.getQueryData(["client-contracts"]);
+    queryClient.setQueryData(["client-contracts"], (old: ClientContractData[] | undefined) => {
+      if (!old) return old;
+      return old.map((client) => ({
+        ...client,
+        contracts: client.contracts.map((contract) => ({
+          ...contract,
+          commissions: contract.commissions.map((comm) =>
+            commissionIds.has(comm.id) ? { ...comm, status: "paid" as const } : comm
+          ),
+        })),
+      }));
+    });
+
+    try {
+      const { error } = await supabase
+        .from("commissions")
+        .update({ status: "paid" })
+        .in("id", Array.from(commissionIds));
+      if (error) throw error;
+
+      // Check contracts completion
+      const uniqueContractIds = [...new Set(commissions.map((c) => c.contractId))];
+      for (const cid of uniqueContractIds) {
+        await checkAndCompleteContract(cid);
+      }
+
+      sonnerToast.success(`${commissions.length} comissões pagas!`);
+      refreshAll();
+    } catch {
+      queryClient.setQueryData(["client-contracts"], previousData);
+      sonnerToast.error("Erro ao pagar comissões.");
     }
   };
 
@@ -925,9 +981,20 @@ export default function ClientesAtivos() {
                                 <div key={mKey}>
                                   <div className="flex items-center justify-between mb-2">
                                     <h4 className="text-sm font-semibold">{mGroup.label}</h4>
-                                    <Badge variant="secondary" className="text-xs">
-                                      {formatCurrency(mGroup.items.reduce((s, c) => s + c.value, 0))}
-                                    </Badge>
+                                    <div className="flex items-center gap-2">
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        className="h-7 text-xs text-emerald-500 border-emerald-500/30 hover:bg-emerald-500/10"
+                                        onClick={() => quickPayAllCommissions(mGroup.items.map((c) => ({ id: c.id, contractId: c.contractId })))}
+                                      >
+                                        <Check className="h-3 w-3 mr-1" />
+                                        Pagar tudo
+                                      </Button>
+                                      <Badge variant="secondary" className="text-xs">
+                                        {formatCurrency(mGroup.items.reduce((s, c) => s + c.value, 0))}
+                                      </Badge>
+                                    </div>
                                   </div>
                                   <div className="rounded-lg border border-border/30 overflow-hidden">
                                     <Table>
