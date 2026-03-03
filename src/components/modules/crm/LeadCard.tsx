@@ -1,4 +1,4 @@
-import { Phone, Mail, MapPin, DollarSign, MoreHorizontal, Calendar, MessageSquareText, Footprints } from "lucide-react";
+import { Phone, Mail, MapPin, DollarSign, MoreHorizontal, Calendar, MessageSquareText, Footprints, Star } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -47,6 +47,8 @@ export function LeadCard({
   const hasNotes = !!client.notes && !isClosedOrLost;
   const hasNextStepNotes = !!client.next_step_notes && !isClosedOrLost;
   const hasMeeting = !!(client.meeting_date && columnId === "negociacao");
+  const isHighlightUrl = !!client.highlight && /^https?:\/\//i.test(client.highlight);
+  const hasHighlight = isHighlightUrl;
 
   return (
     <div
@@ -63,9 +65,14 @@ export function LeadCard({
         {/* Header: Name + Actions */}
         <div className="flex items-start justify-between gap-2">
           <div className="flex-1 min-w-0">
-            <p className="font-semibold text-[13px] leading-tight truncate text-foreground">
-              {capitalizeWords(client.name)}
-            </p>
+            <div className="flex items-center gap-1.5">
+              <p className="font-semibold text-[13px] leading-tight truncate text-foreground">
+                {capitalizeWords(client.name)}
+              </p>
+              {hasHighlight && (
+                <Star className="w-3 h-3 shrink-0 text-yellow-400 fill-yellow-400" />
+              )}
+            </div>
           </div>
 
           <DropdownMenu>
