@@ -25,6 +25,7 @@ export interface Client {
   meeting_responsible?: string | null;
   lost_reason?: string | null;
   next_step_notes?: string | null;
+  highlight?: string | null;
 }
 
 export interface PipelineColumn {
