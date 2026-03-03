@@ -2,15 +2,7 @@ import { useState, useEffect } from "react";
 import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
 import { PipelineColumn, Client, PipelineStage } from "@/types";
 import { cn } from "@/lib/utils";
-import { capitalizeWords } from "@/lib/utils";
-import { Phone, Mail, MoreHorizontal, MapPin, DollarSign } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { LeadCard } from "./LeadCard";
 import { toast } from "sonner";
 import { useRealtimeClients } from "@/hooks/useRealtimeClients";
 import { ClientViewDialog } from "./ClientViewDialog";
