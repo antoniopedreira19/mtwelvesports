@@ -71,12 +71,19 @@ const App = () => (
                 }
               />
               {/* Both admin and member can access */}
-              <Route path="/crm" element={<CRM />} />
+              <Route
+                path="/crm"
+                element={
+                  <RoleProtectedRoute allowedRoles={["admin", "member"]}>
+                    <CRM />
+                  </RoleProtectedRoute>
+                }
+              />
               {/* Client portal - only clients */}
               <Route
                 path="/athlete-portal"
                 element={
-                  <RoleProtectedRoute allowedRoles={["client"]} fallbackPath="/crm">
+                  <RoleProtectedRoute allowedRoles={["client"]} fallbackPath="/">
                     <AthletePortal />
                   </RoleProtectedRoute>
                 }
