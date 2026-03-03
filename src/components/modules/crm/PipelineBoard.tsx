@@ -9,6 +9,7 @@ import { ClientViewDialog } from "./ClientViewDialog";
 import { ClientDetailDialog } from "./ClientDetailDialog";
 import { MeetingDialog } from "./MeetingDialog";
 import { LostReasonDialog } from "./LostReasonDialog";
+import { NextStepDialog } from "./NextStepDialog";
 import { supabase } from "@/integrations/supabase/client";
 
 interface PipelineBoardProps {
@@ -19,6 +20,7 @@ interface PipelineBoardProps {
 
 const columnColors: Record<PipelineStage, string> = {
   radar: "border-t-blue-500",
+  next_step: "border-t-purple-500",
   contato: "border-t-yellow-500",
   negociacao: "border-t-orange-500",
   fechado: "border-t-green-500",
@@ -27,6 +29,7 @@ const columnColors: Record<PipelineStage, string> = {
 
 const columnBadgeColors: Record<PipelineStage, string> = {
   radar: "bg-blue-500/10 text-blue-400",
+  next_step: "bg-purple-500/10 text-purple-400",
   contato: "bg-yellow-500/10 text-yellow-400",
   negociacao: "bg-orange-500/10 text-orange-400",
   fechado: "bg-green-500/10 text-green-400",
@@ -59,6 +62,17 @@ export function PipelineBoard({ onClientMoveToFechado, searchTerm = "", monthFil
   const [lostClient, setLostClient] = useState<Client | null>(null);
   const [isLostOpen, setIsLostOpen] = useState(false);
   const [pendingLostDrag, setPendingLostDrag] = useState<{
+    client: Client;
+    sourceColumnId: string;
+    destColumnId: string;
+    sourceIndex: number;
+    destIndex: number;
+  } | null>(null);
+
+  // Next step dialog state
+  const [nextStepClient, setNextStepClient] = useState<Client | null>(null);
+  const [isNextStepOpen, setIsNextStepOpen] = useState(false);
+  const [pendingNextStepDrag, setPendingNextStepDrag] = useState<{
     client: Client;
     sourceColumnId: string;
     destColumnId: string;
@@ -301,6 +315,19 @@ export function PipelineBoard({ onClientMoveToFechado, searchTerm = "", monthFil
     applyDrag(source.droppableId, destination.droppableId, source.index, destination.index, updatedClient);
 
     // Handle special cases
+    if (destination.droppableId === "next_step") {
+      setNextStepClient(movedClient);
+      setPendingNextStepDrag({
+        client: movedClient,
+        sourceColumnId: source.droppableId,
+        destColumnId: destination.droppableId,
+        sourceIndex: source.index,
+        destIndex: destination.index,
+      });
+      setIsNextStepOpen(true);
+      return;
+    }
+
     if (destination.droppableId === "negociacao") {
       setMeetingClient(movedClient);
       setPendingMeetingDrag({
@@ -458,6 +485,15 @@ export function PipelineBoard({ onClientMoveToFechado, searchTerm = "", monthFil
         onOpenChange={setIsLostOpen}
         onConfirm={handleLostConfirm}
         onCancel={handleLostCancel}
+      />
+
+      {/* Next Step Dialog */}
+      <NextStepDialog
+        client={nextStepClient}
+        open={isNextStepOpen}
+        onOpenChange={setIsNextStepOpen}
+        onConfirm={handleNextStepConfirm}
+        onCancel={handleNextStepCancel}
       />
     </>
   );

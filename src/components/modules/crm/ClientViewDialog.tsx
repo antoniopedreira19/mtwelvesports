@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { User, Mail, Phone, MapPin, FileText, Pencil, Trash2, Calendar, UserCheck, AlertCircle, Loader2 } from "lucide-react";
+import { User, Mail, Phone, MapPin, FileText, Pencil, Trash2, Calendar, UserCheck, AlertCircle, Loader2, Footprints } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
@@ -36,6 +36,7 @@ interface ClientViewDialogProps {
 
 const stageLabels: Record<PipelineStage, string> = {
   radar: "Leads",
+  next_step: "Próximos Passos",
   contato: "SQL",
   negociacao: "Negociação",
   fechado: "Fechado",
@@ -44,6 +45,7 @@ const stageLabels: Record<PipelineStage, string> = {
 
 const stageBadgeColors: Record<PipelineStage, string> = {
   radar: "bg-blue-500/20 text-blue-400 border-blue-500/30",
+  next_step: "bg-purple-500/20 text-purple-400 border-purple-500/30",
   contato: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
   negociacao: "bg-orange-500/20 text-orange-400 border-orange-500/30",
   fechado: "bg-green-500/20 text-green-400 border-green-500/30",
@@ -132,6 +134,19 @@ export function ClientViewDialog({
               </div>
               <p className="text-sm text-muted-foreground">
                 {client.lost_reason}
+              </p>
+            </div>
+          )}
+
+          {/* Next Step Notes */}
+          {client.next_step_notes && (
+            <div className="p-4 rounded-lg bg-purple-500/10 border border-purple-500/30">
+              <div className="flex items-center gap-2 text-purple-400 mb-1">
+                <Footprints className="w-4 h-4" />
+                <span className="text-sm font-medium">Próximos Passos</span>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                {client.next_step_notes}
               </p>
             </div>
           )}

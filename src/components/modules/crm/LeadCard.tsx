@@ -24,6 +24,7 @@ interface LeadCardProps {
 
 const stageBorder: Record<PipelineStage, string> = {
   radar: "border-l-blue-500",
+  next_step: "border-l-purple-500",
   contato: "border-l-yellow-500",
   negociacao: "border-l-orange-500",
   fechado: "border-l-green-500",
@@ -43,8 +44,7 @@ export function LeadCard({
   onDelete,
 }: LeadCardProps) {
   const hasNotes = !!client.notes;
-  const nextStepNotes = (client as any).next_step_notes;
-  const hasNextStepNotes = !!nextStepNotes;
+  const hasNextStepNotes = !!client.next_step_notes;
   const hasMeeting = !!(client.meeting_date && columnId === "negociacao");
 
   return (
@@ -122,9 +122,9 @@ export function LeadCard({
         {/* Next step notes section */}
         {hasNextStepNotes && (
           <div className="mt-2 space-y-0.5">
-            <span className="text-[10px] font-medium uppercase tracking-wider text-purple-400/80">Próximo Passo</span>
+            <span className="text-[10px] font-medium uppercase tracking-wider text-purple-400/80">Próximos Passos</span>
             <p className="text-[11px] text-purple-300/90 leading-relaxed line-clamp-2">
-              {nextStepNotes}
+              {client.next_step_notes}
             </p>
           </div>
         )}

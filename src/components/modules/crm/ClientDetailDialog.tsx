@@ -48,8 +48,9 @@ const formSchema = z.object({
   email: z.string().email("E-mail inválido").optional().or(z.literal("")),
   phone: z.string().optional(),
   nationality: z.string().optional(),
-  stage: z.enum(["radar", "contato", "negociacao", "fechado", "perdido"]),
+  stage: z.enum(["radar", "next_step", "contato", "negociacao", "fechado", "perdido"]),
   notes: z.string().optional(),
+  next_step_notes: z.string().optional(),
 });
 
 interface ClientDetailDialogProps {
@@ -79,6 +80,7 @@ export function ClientDetailDialog({
       nationality: "",
       stage: "radar",
       notes: "",
+      next_step_notes: "",
     },
   });
 
@@ -92,6 +94,7 @@ export function ClientDetailDialog({
         nationality: client.nationality || "",
         stage: client.stage,
         notes: client.notes || "",
+        next_step_notes: client.next_step_notes || "",
       });
     }
   }, [client, form]);
@@ -108,6 +111,7 @@ export function ClientDetailDialog({
         nationality: values.nationality || null,
         stage: values.stage,
         notes: values.notes || null,
+        next_step_notes: values.next_step_notes || null,
       });
 
       toast.success("Atleta atualizado com sucesso!");
@@ -252,6 +256,7 @@ export function ClientDetailDialog({
                     </FormControl>
                     <SelectContent>
                       <SelectItem value="radar">Radar (Prospecção)</SelectItem>
+                      <SelectItem value="next_step">Próximos Passos</SelectItem>
                       <SelectItem value="contato">Em Contato</SelectItem>
                       <SelectItem value="negociacao">Negociação</SelectItem>
                       <SelectItem value="fechado">Fechado</SelectItem>
@@ -279,6 +284,25 @@ export function ClientDetailDialog({
                         {...field}
                       />
                     </div>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Próximos Passos */}
+            <FormField
+              control={form.control}
+              name="next_step_notes"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Próximos Passos</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      className="min-h-[80px] resize-none"
+                      placeholder="Descreva os próximos passos estratégicos..."
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

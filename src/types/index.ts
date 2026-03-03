@@ -1,5 +1,5 @@
 // --- Enums & Tipos Básicos ---
-export type PipelineStage = "radar" | "contato" | "negociacao" | "fechado" | "perdido";
+export type PipelineStage = "radar" | "next_step" | "contato" | "negociacao" | "fechado" | "perdido";
 export type ContractStatus = "draft" | "active" | "completed" | "cancelled";
 export type TransactionStatus = "pending" | "paid" | "overdue" | "cancelled";
 export type TransactionType = "income" | "expense";
@@ -24,6 +24,7 @@ export interface Client {
   meeting_date?: string | null;
   meeting_responsible?: string | null;
   lost_reason?: string | null;
+  next_step_notes?: string | null;
 }
 
 export interface PipelineColumn {
