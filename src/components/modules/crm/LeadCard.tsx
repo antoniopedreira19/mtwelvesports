@@ -43,8 +43,9 @@ export function LeadCard({
   onEdit,
   onDelete,
 }: LeadCardProps) {
-  const hasNotes = !!client.notes;
-  const hasNextStepNotes = !!client.next_step_notes;
+  const isClosedOrLost = columnId === "fechado" || columnId === "perdido";
+  const hasNotes = !!client.notes && !isClosedOrLost;
+  const hasNextStepNotes = !!client.next_step_notes && !isClosedOrLost;
   const hasMeeting = !!(client.meeting_date && columnId === "negociacao");
 
   return (
