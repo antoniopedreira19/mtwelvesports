@@ -281,6 +281,47 @@ export function PipelineBoard({ onClientMoveToFechado, searchTerm = "", monthFil
     setLostClient(null);
   };
 
+  const handleNextStepConfirm = async (clientId: string, notes: string) => {
+    if (!pendingNextStepDrag) return;
+    
+    try {
+      await supabase
+        .from("clients")
+        .update({
+          stage: "next_step",
+          next_step_notes: notes,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", clientId);
+      
+      toast.success("Próximos passos registrados!");
+    } catch (error) {
+      toast.error("Erro ao salvar próximos passos");
+      revertDrag(
+        pendingNextStepDrag.sourceColumnId,
+        pendingNextStepDrag.destColumnId,
+        pendingNextStepDrag.sourceIndex,
+        pendingNextStepDrag.client
+      );
+    } finally {
+      setPendingNextStepDrag(null);
+      setNextStepClient(null);
+    }
+  };
+
+  const handleNextStepCancel = () => {
+    if (pendingNextStepDrag) {
+      revertDrag(
+        pendingNextStepDrag.sourceColumnId,
+        pendingNextStepDrag.destColumnId,
+        pendingNextStepDrag.sourceIndex,
+        pendingNextStepDrag.client
+      );
+      setPendingNextStepDrag(null);
+    }
+    setNextStepClient(null);
+  };
+
   const handleDragEnd = async (result: DropResult) => {
     const { source, destination } = result;
 
