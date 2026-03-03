@@ -144,7 +144,7 @@ export function ClientDetailDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[550px] bg-card border-border">
+      <DialogContent className="sm:max-w-[550px] max-h-[90vh] overflow-y-auto bg-card border-border">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center overflow-hidden">
