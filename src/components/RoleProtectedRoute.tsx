@@ -25,7 +25,8 @@ export function RoleProtectedRoute({
   }
 
   if (!role || !allowedRoles.includes(role)) {
-    return <Navigate to={fallbackPath} replace />;
+    const redirectTo = role === "client" ? "/athlete-portal" : fallbackPath;
+    return <Navigate to={redirectTo} replace />;
   }
 
   return <>{children}</>;
