@@ -21,6 +21,7 @@ export type Database = {
           created_at: string
           deal_value: number | null
           email: string | null
+          form_submissions: string | null
           highlight: string | null
           id: string
           lost_reason: string | null
@@ -47,6 +48,7 @@ export type Database = {
           created_at?: string
           deal_value?: number | null
           email?: string | null
+          form_submissions?: string | null
           highlight?: string | null
           id?: string
           lost_reason?: string | null
@@ -73,6 +75,7 @@ export type Database = {
           created_at?: string
           deal_value?: number | null
           email?: string | null
+          form_submissions?: string | null
           highlight?: string | null
           id?: string
           lost_reason?: string | null
