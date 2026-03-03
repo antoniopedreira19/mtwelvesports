@@ -2,15 +2,7 @@ import { useState, useEffect } from "react";
 import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
 import { PipelineColumn, Client, PipelineStage } from "@/types";
 import { cn } from "@/lib/utils";
-import { capitalizeWords } from "@/lib/utils";
-import { Phone, Mail, MoreHorizontal, MapPin, DollarSign } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { LeadCard } from "./LeadCard";
 import { toast } from "sonner";
 import { useRealtimeClients } from "@/hooks/useRealtimeClients";
 import { ClientViewDialog } from "./ClientViewDialog";
@@ -130,12 +122,8 @@ export function PipelineBoard({ onClientMoveToFechado, searchTerm = "", monthFil
     setIsEditOpen(true);
   };
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-    }).format(value);
-  };
+
+
 
   const applyDrag = (
     sourceColumnId: string,
@@ -401,80 +389,26 @@ export function PipelineBoard({ onClientMoveToFechado, searchTerm = "", monthFil
                               ref={provided.innerRef}
                               {...provided.draggableProps}
                               {...provided.dragHandleProps}
-                              onClick={() => handleClientClick(client)}
-                              className={cn(
-                                "p-3 mb-2 rounded-lg bg-surface border border-border/30",
-                                "hover:border-border transition-all cursor-pointer",
-                                snapshot.isDragging && "shadow-xl shadow-black/50 rotate-2",
-                              )}
                             >
-                              <div className="flex items-start justify-between mb-2">
-                                <div>
-                                  <p className="font-medium text-sm">
-                                    {capitalizeWords(client.name)}
-                                  </p>
-                                  {client.nationality && (
-                                    <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
-                                      <MapPin className="w-3 h-3" />
-                                      {capitalizeWords(client.nationality)}
-                                    </div>
-                                  )}
-                                </div>
-                                <DropdownMenu>
-                                  <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                                    <Button variant="ghost" size="icon" className="h-6 w-6">
-                                      <MoreHorizontal className="w-3 h-3" />
-                                    </Button>
-                                  </DropdownMenuTrigger>
-                                  <DropdownMenuContent align="end" className="bg-popover">
-                                    <DropdownMenuItem onClick={() => handleClientClick(client)}>
-                                      Ver detalhes
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => {
-                                      setSelectedClient(client);
-                                      setIsEditOpen(true);
-                                    }}>
-                                      Editar
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem
-                                      className="text-destructive"
-                                      onClick={async () => {
-                                        try {
-                                          await deleteClient(client.id);
-                                          toast.success("Lead removido!");
-                                        } catch {
-                                          toast.error("Erro ao remover lead");
-                                        }
-                                      }}
-                                    >
-                                      Remover
-                                    </DropdownMenuItem>
-                                  </DropdownMenuContent>
-                                </DropdownMenu>
-                              </div>
-
-                              <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                                {client.phone && (
-                                  <div className="flex items-center gap-1">
-                                    <Phone className="w-3 h-3" />
-                                    <span className="truncate max-w-[80px]">{client.phone}</span>
-                                  </div>
-                                )}
-                                {client.email && (
-                                  <div className="flex items-center gap-1">
-                                    <Mail className="w-3 h-3" />
-                                    <span className="truncate max-w-[80px]">{client.email}</span>
-                                  </div>
-                                )}
-                              </div>
-
-                              {/* Contract value for closed clients */}
-                              {column.id === "fechado" && contractValues[client.id] && (
-                                <div className="flex items-center gap-1 mt-2 text-xs font-medium text-success">
-                                  <DollarSign className="w-3 h-3" />
-                                  {formatCurrency(contractValues[client.id])}
-                                </div>
-                              )}
+                              <LeadCard
+                                client={client}
+                                columnId={column.id}
+                                contractValue={contractValues[client.id]}
+                                isDragging={snapshot.isDragging}
+                                onClick={() => handleClientClick(client)}
+                                onEdit={() => {
+                                  setSelectedClient(client);
+                                  setIsEditOpen(true);
+                                }}
+                                onDelete={async () => {
+                                  try {
+                                    await deleteClient(client.id);
+                                    toast.success("Lead removido!");
+                                  } catch {
+                                    toast.error("Erro ao remover lead");
+                                  }
+                                }}
+                              />
                             </div>
                           )}
                         </Draggable>
