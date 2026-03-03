@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -24,10 +25,10 @@ export default function Auth() {
     }
     
     setLoading(true);
-    const { error } = await signIn(email, password);
-    setLoading(false);
-
+    const { error, data } = await signIn(email, password);
+    
     if (error) {
+      setLoading(false);
       toast({ 
         title: 'Erro ao entrar', 
         description: error.message === 'Invalid login credentials' 
@@ -36,7 +37,25 @@ export default function Auth() {
         variant: 'destructive' 
       });
     } else {
-      navigate('/');
+      // Check user role to redirect accordingly
+      const userId = data?.user?.id;
+      if (userId) {
+        const { data: roleData } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', userId)
+          .maybeSingle();
+        
+        setLoading(false);
+        if (roleData?.role === 'client') {
+          navigate('/athlete-portal');
+        } else {
+          navigate('/');
+        }
+      } else {
+        setLoading(false);
+        navigate('/');
+      }
     }
   };
 
