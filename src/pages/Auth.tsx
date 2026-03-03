@@ -59,34 +59,7 @@ export default function Auth() {
     }
   };
 
-  const handleSignUp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email || !password) {
-      toast({ title: 'Erro', description: 'Preencha todos os campos', variant: 'destructive' });
-      return;
-    }
-    if (password.length < 6) {
-      toast({ title: 'Erro', description: 'A senha deve ter pelo menos 6 caracteres', variant: 'destructive' });
-      return;
-    }
 
-    setLoading(true);
-    const { error } = await signUp(email, password);
-    setLoading(false);
-
-    if (error) {
-      if (error.message.includes('already registered')) {
-        toast({ title: 'Erro', description: 'Este email já está cadastrado', variant: 'destructive' });
-      } else {
-        toast({ title: 'Erro ao cadastrar', description: error.message, variant: 'destructive' });
-      }
-    } else {
-      toast({ 
-        title: 'Cadastro realizado!', 
-        description: 'Verifique seu email para confirmar a conta ou faça login diretamente.' 
-      });
-    }
-  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4 relative overflow-hidden">
