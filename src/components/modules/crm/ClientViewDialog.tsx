@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { User, Mail, Phone, MapPin, FileText, Pencil, Trash2, Calendar, UserCheck, AlertCircle, Loader2, Footprints } from "lucide-react";
+import { User, Mail, Phone, MapPin, FileText, Pencil, Trash2, Calendar, UserCheck, AlertCircle, Loader2, Footprints, ExternalLink } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
@@ -172,6 +172,21 @@ export function ClientViewDialog({
                   </div>
                 )}
               </div>
+            </div>
+          )}
+
+          {/* Highlight Link */}
+          {client.highlight && /^https?:\/\//i.test(client.highlight) && (
+            <div className="flex items-center gap-2 text-sm">
+              <ExternalLink className="w-4 h-4 text-muted-foreground" />
+              <a
+                href={client.highlight}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary hover:underline truncate"
+              >
+                Highlight
+              </a>
             </div>
           )}
 
