@@ -1,4 +1,4 @@
-import { LayoutDashboard, Users, UserCheck, Wallet, Settings, LogOut, UserCircle } from "lucide-react";
+import { LayoutDashboard, Users, UserCheck, Wallet, Settings, LogOut, UserCircle, Dumbbell } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import {
@@ -20,14 +20,20 @@ export function AppSidebar() {
   const { state } = useSidebar();
   const location = useLocation();
   const { user, signOut } = useAuth();
-  const { isAdmin } = useUserRole();
+  const { isAdmin, role } = useUserRole();
+  const isClient = role === "client";
   const isCollapsed = state === "collapsed";
 
   // URL da Logo Atualizada (Versão 2)
   const LOGO_URL =
     "https://ychhgfsavlnoyjvfpdxa.supabase.co/storage/v1/object/public/logos&templates/image-removebg-preview%20(2).png";
 
-  // Menu items based on role
+  // Client-specific menu
+  const clientMenuItems = [
+    { title: "Portal do Atleta", url: "/athlete-portal", icon: Dumbbell },
+  ];
+
+  // Admin/member menu items
   const mainMenuItems = [
     { title: "Dashboard", url: "/", icon: LayoutDashboard, adminOnly: true },
     { title: "DRE", url: "/dre", icon: Wallet, adminOnly: true },
@@ -36,7 +42,9 @@ export function AppSidebar() {
     { title: "Clientes Ativos", url: "/clientes-ativos", icon: UserCircle, adminOnly: true },
   ];
 
-  const menuItems = mainMenuItems.filter((item) => !item.adminOnly || isAdmin);
+  const menuItems = isClient
+    ? clientMenuItems
+    : mainMenuItems.filter((item) => !item.adminOnly || isAdmin);
 
   return (
     <Sidebar collapsible="icon" className="border-r border-border/50 bg-black text-white">
