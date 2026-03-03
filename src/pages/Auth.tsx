@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -12,7 +13,7 @@ export default function Auth() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const { signIn, signUp } = useAuth();
+  const { signIn } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -24,10 +25,10 @@ export default function Auth() {
     }
     
     setLoading(true);
-    const { error } = await signIn(email, password);
-    setLoading(false);
-
+    const { error, data } = await signIn(email, password);
+    
     if (error) {
+      setLoading(false);
       toast({ 
         title: 'Erro ao entrar', 
         description: error.message === 'Invalid login credentials' 
@@ -36,38 +37,29 @@ export default function Auth() {
         variant: 'destructive' 
       });
     } else {
-      navigate('/');
-    }
-  };
-
-  const handleSignUp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email || !password) {
-      toast({ title: 'Erro', description: 'Preencha todos os campos', variant: 'destructive' });
-      return;
-    }
-    if (password.length < 6) {
-      toast({ title: 'Erro', description: 'A senha deve ter pelo menos 6 caracteres', variant: 'destructive' });
-      return;
-    }
-
-    setLoading(true);
-    const { error } = await signUp(email, password);
-    setLoading(false);
-
-    if (error) {
-      if (error.message.includes('already registered')) {
-        toast({ title: 'Erro', description: 'Este email já está cadastrado', variant: 'destructive' });
+      // Check user role to redirect accordingly
+      const userId = data?.user?.id;
+      if (userId) {
+        const { data: roleData } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', userId)
+          .maybeSingle();
+        
+        setLoading(false);
+        if (roleData?.role === 'client') {
+          navigate('/athlete-portal');
+        } else {
+          navigate('/');
+        }
       } else {
-        toast({ title: 'Erro ao cadastrar', description: error.message, variant: 'destructive' });
+        setLoading(false);
+        navigate('/');
       }
-    } else {
-      toast({ 
-        title: 'Cadastro realizado!', 
-        description: 'Verifique seu email para confirmar a conta ou faça login diretamente.' 
-      });
     }
   };
+
+
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4 relative overflow-hidden">
