@@ -1,27 +1,50 @@
 
 
-## Diagnóstico
+## Plan: Rename to "Próximos Passos" and Add Editing Support
 
-O problema é uma combinação de dois fatores:
+The user wants two things:
+1. Rename "Next Step" / "Próximo Passo" to **"Próximos Passos"** everywhere
+2. Allow editing `next_step_notes` in the ClientDetailDialog (edit modal)
 
-1. **A rota `/crm` não tem proteção de role** (linha 74 do App.tsx): qualquer usuário autenticado pode acessá-la, incluindo clientes.
-2. **Race condition no redirecionamento**: quando o `useUserRole` falha ou demora a carregar, o fallback é `"member"`. Como `"member"` não está em `allowedRoles: ["client"]` na rota `/athlete-portal`, o `RoleProtectedRoute` redireciona para o `fallbackPath="/crm"` — que não tem proteção nenhuma e aceita o usuário.
-3. **A sidebar não diferencia clientes**: mostra apenas itens filtrados por `adminOnly`, mas não esconde itens de clientes.
+### Current State
 
-## Plano de Correção
+- `PipelineStage` type does NOT include `next_step` — it only has `radar | contato | negociacao | fechado | perdido`
+- `Client` interface does NOT have `next_step_notes` field
+- `useRealtimeClients` does NOT have a "Next Step" column
+- `ClientDetailDialog` (edit form) has no `next_step_notes` field
+- `ClientViewDialog` has no "Próximos Passos" section
+- `LeadCard` uses `(client as any).next_step_notes` which suggests it was partially added
 
-### 1. Proteger a rota `/crm` (App.tsx)
-Envolver a rota `/crm` com `RoleProtectedRoute allowedRoles={["admin", "member"]}` para que clientes não possam acessá-la.
+It seems the previous round of edits to add the `next_step` column didn't fully persist. The user's request implies they want the label renamed and the edit capability added. I'll include the full implementation.
 
-### 2. Ajustar sidebar para clientes (AppSidebar.tsx)
-- Detectar se o usuário é `client` via `useUserRole`
-- Se for cliente, mostrar apenas o link "Portal do Atleta" (`/athlete-portal`) na sidebar, escondendo CRM e as demais rotas internas
+### Changes
 
-### 3. Ajustar fallback do `/athlete-portal` (App.tsx)
-Alterar o `fallbackPath` da rota `/athlete-portal` de `"/crm"` para `"/"` — assim, se um não-cliente tentar acessar, vai para o dashboard (que por sua vez redireciona conforme a role).
+**1. `src/types/index.ts`**
+- Add `"next_step"` to `PipelineStage`
+- Add `next_step_notes?: string | null` to `Client`
 
-### 4. Ajustar redirecionamento padrão para clientes (RoleProtectedRoute.tsx)
-Garantir que o fallback padrão (`fallbackPath = "/crm"`) também considere clientes — já existe a lógica `role === "client" ? "/athlete-portal"`, mas o ideal é que a rota raiz `/` redirecione corretamente para `/athlete-portal` quando a role for `client`.
+**2. `src/hooks/useRealtimeClients.ts`**
+- Add `{ id: "next_step", title: "Próximos Passos", clients: [] }` column after `contato`
 
-Essas 4 alterações resolvem o problema de forma completa e garantem que clientes fiquem restritos ao portal.
+**3. `src/components/modules/crm/LeadCard.tsx`**
+- Add `next_step` to `stageBorder` record
+- Use `client.next_step_notes` instead of `(client as any).next_step_notes`
+- Rename label from "Próximo Passo" to "Próximos Passos"
+
+**4. `src/components/modules/crm/PipelineBoard.tsx`**
+- Add `next_step` entries to `columnColors` and `columnBadgeColors`
+- Add `NextStepDialog` import and drag handling for `next_step` column (modal on drag)
+
+**5. `src/components/modules/crm/NextStepDialog.tsx`** (create)
+- Modal that opens when dragging a lead into "Próximos Passos" column
+- Text area for `next_step_notes`, confirm saves to Supabase
+
+**6. `src/components/modules/crm/ClientViewDialog.tsx`**
+- Add `next_step` to `stageLabels` and `stageBadgeColors`
+- Add "Próximos Passos" display section showing `client.next_step_notes`
+
+**7. `src/components/modules/crm/ClientDetailDialog.tsx`**
+- Add `next_step_notes` to form schema, default values, reset, and submit
+- Add `next_step` to stage select options
+- Add `Textarea` field labeled "Próximos Passos" in the form
 
