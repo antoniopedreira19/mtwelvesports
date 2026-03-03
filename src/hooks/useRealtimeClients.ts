@@ -4,6 +4,7 @@ import { Client, PipelineColumn, PipelineStage } from "@/types";
 
 const initialColumns: PipelineColumn[] = [
   { id: "radar", title: "Leads", clients: [] },
+  { id: "next_step", title: "Próximos Passos", clients: [] },
   { id: "contato", title: "SQL", clients: [] },
   { id: "negociacao", title: "Negociação", clients: [] },
   { id: "fechado", title: "Fechado", clients: [] },
