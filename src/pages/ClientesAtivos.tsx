@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import {
   Plus, Search, ChevronDown, ChevronRight, Check, CircleDollarSign,
   Users, TrendingUp, Clock, CheckCircle2, Loader2, FileText, AlertTriangle,
-  Calendar, Link2, UserCheck,
+  Calendar,
 } from "lucide-react";
 import { format, parseISO, isSameMonth, isBefore, startOfDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
