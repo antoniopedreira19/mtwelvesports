@@ -22,6 +22,7 @@ import {
   Stethoscope,
   Camera,
 } from "lucide-react";
+import { AthletePaymentsTab } from "@/components/modules/athlete/AthletePaymentsTab";
 
 function getGreeting() {
   return "Bem-vindo";
@@ -282,10 +283,7 @@ export default function AthletePortal() {
 
         {/* PAYMENTS TAB */}
         <TabsContent value="payments" className="mt-6 animate-in fade-in duration-300">
-          <ComingSoonPlaceholder
-            title="Pagamentos"
-            description="Em breve você poderá visualizar suas parcelas, status de pagamento e histórico financeiro."
-          />
+          <AthletePaymentsTab />
         </TabsContent>
       </Tabs>
     </div>
