@@ -488,6 +488,7 @@ export default function ClientesAtivos() {
                 </TooltipContent>
               </Tooltip>
             </div>
+          </div>
           <div className="hidden md:flex items-center gap-6 shrink-0">
             <div className="text-right">
               <p className="text-xs text-muted-foreground">Total</p>
