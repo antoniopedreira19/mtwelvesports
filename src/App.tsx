@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { AthleteLayout } from "@/components/layout/AthleteLayout";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { RoleProtectedRoute } from "@/components/RoleProtectedRoute";
@@ -28,8 +29,21 @@ const App = () => (
         <AuthProvider>
           <Routes>
             <Route path="/auth" element={<Auth />} />
+
+            {/* Athlete portal - own layout without sidebar */}
+            <Route element={<ProtectedRoute><AthleteLayout /></ProtectedRoute>}>
+              <Route
+                path="/athlete-portal"
+                element={
+                  <RoleProtectedRoute allowedRoles={["client"]} fallbackPath="/">
+                    <AthletePortal />
+                  </RoleProtectedRoute>
+                }
+              />
+            </Route>
+
+            {/* Admin/member layout with sidebar */}
             <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
-              {/* Admin only routes */}
               <Route
                 path="/"
                 element={
@@ -70,7 +84,6 @@ const App = () => (
                   </RoleProtectedRoute>
                 }
               />
-              {/* Both admin and member can access */}
               <Route
                 path="/crm"
                 element={
@@ -79,16 +92,8 @@ const App = () => (
                   </RoleProtectedRoute>
                 }
               />
-              {/* Client portal - only clients */}
-              <Route
-                path="/athlete-portal"
-                element={
-                  <RoleProtectedRoute allowedRoles={["client"]} fallbackPath="/">
-                    <AthletePortal />
-                  </RoleProtectedRoute>
-                }
-              />
             </Route>
+
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
