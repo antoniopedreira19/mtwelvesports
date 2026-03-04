@@ -1075,14 +1075,6 @@ export default function ClientesAtivos() {
         clientName={paymentClientName}
         onConfirm={handlePaymentConfirm}
       />
-      <LinkUserDialog
-        open={linkDialogOpen}
-        onOpenChange={setLinkDialogOpen}
-        clientId={linkClientId}
-        clientName={linkClientName}
-        currentUserId={linkCurrentUserId}
-        onLinked={refreshAll}
-      />
     </div>
   );
 }
