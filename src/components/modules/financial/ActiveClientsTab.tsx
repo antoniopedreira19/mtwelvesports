@@ -558,6 +558,158 @@ function ClientCard({
   );
 }
 
+/* ─── Opportunities Tab ─── */
+const allStages: OpportunityStage[] = ['prospecting', 'in_conversation', 'visiting', 'offer', 'committed', 'rejected'];
+
+function OpportunitiesTab({ clientId, userId }: { clientId: string; userId: string | null }) {
+  const { data: opportunities, isLoading, createMutation, updateMutation, deleteMutation } = useOpportunities(clientId);
+  const [adding, setAdding] = useState(false);
+  const [newForm, setNewForm] = useState({ institution_name: "", institution_type: "university", stage: "prospecting" as OpportunityStage, notes: "" });
+
+  const handleCreate = () => {
+    if (!newForm.institution_name.trim()) {
+      toast.error("Nome da instituição é obrigatório");
+      return;
+    }
+    createMutation.mutate(
+      { ...newForm, user_id: userId },
+      {
+        onSuccess: () => {
+          toast.success("Oportunidade adicionada");
+          setAdding(false);
+          setNewForm({ institution_name: "", institution_type: "university", stage: "prospecting", notes: "" });
+        },
+        onError: () => toast.error("Erro ao criar oportunidade"),
+      }
+    );
+  };
+
+  const handleStageChange = (id: string, stage: OpportunityStage) => {
+    updateMutation.mutate({ id, stage }, {
+      onSuccess: () => toast.success("Estágio atualizado"),
+      onError: () => toast.error("Erro ao atualizar"),
+    });
+  };
+
+  const handleDelete = (id: string) => {
+    deleteMutation.mutate(id, {
+      onSuccess: () => toast.success("Oportunidade removida"),
+      onError: () => toast.error("Erro ao remover"),
+    });
+  };
+
+  if (isLoading) {
+    return <div className="space-y-3 mt-3">{[1, 2].map(i => <Skeleton key={i} className="h-20 rounded-xl" />)}</div>;
+  }
+
+  return (
+    <div className="space-y-4 mt-3">
+      {!adding ? (
+        <Button variant="outline" size="sm" onClick={() => setAdding(true)} className="gap-1.5 text-xs w-full border-dashed">
+          <Plus className="h-3.5 w-3.5" /> Nova Oportunidade
+        </Button>
+      ) : (
+        <div className="rounded-xl bg-muted/20 border border-border/30 p-4 space-y-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <label className="text-[11px] text-muted-foreground uppercase tracking-wider">Instituição *</label>
+              <Input value={newForm.institution_name} onChange={(e) => setNewForm({ ...newForm, institution_name: e.target.value })} placeholder="Nome da escola/universidade/time" className="h-9 text-sm bg-background/50" />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-[11px] text-muted-foreground uppercase tracking-wider">Tipo</label>
+              <Select value={newForm.institution_type} onValueChange={(v) => setNewForm({ ...newForm, institution_type: v })}>
+                <SelectTrigger className="h-9 text-sm bg-background/50"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="university">Universidade</SelectItem>
+                  <SelectItem value="school">Escola</SelectItem>
+                  <SelectItem value="team">Time</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-[11px] text-muted-foreground uppercase tracking-wider">Estágio</label>
+              <Select value={newForm.stage} onValueChange={(v) => setNewForm({ ...newForm, stage: v as OpportunityStage })}>
+                <SelectTrigger className="h-9 text-sm bg-background/50"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {allStages.map(s => <SelectItem key={s} value={s}>{stageLabels[s]}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-[11px] text-muted-foreground uppercase tracking-wider">Notas</label>
+              <Input value={newForm.notes} onChange={(e) => setNewForm({ ...newForm, notes: e.target.value })} placeholder="Observações..." className="h-9 text-sm bg-background/50" />
+            </div>
+          </div>
+          <div className="flex gap-2 justify-end">
+            <Button variant="ghost" size="sm" onClick={() => setAdding(false)} className="h-8 text-xs gap-1">
+              <X className="h-3 w-3" /> Cancelar
+            </Button>
+            <Button size="sm" onClick={handleCreate} disabled={createMutation.isPending} className="h-8 text-xs gap-1">
+              <Check className="h-3 w-3" /> Adicionar
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {(!opportunities || opportunities.length === 0) && !adding ? (
+        <div className="text-center py-8">
+          <div className="h-12 w-12 rounded-xl bg-muted/30 flex items-center justify-center mx-auto mb-3">
+            <Building2 className="h-6 w-6 text-muted-foreground/40" />
+          </div>
+          <p className="text-sm text-muted-foreground">Nenhuma oportunidade cadastrada</p>
+          <p className="text-xs text-muted-foreground/60 mt-1">Adicione escolas, universidades ou times</p>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {opportunities?.map((opp) => (
+            <div key={opp.id} className="rounded-xl bg-muted/20 border border-border/30 p-4 flex items-start gap-3 group">
+              <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
+                <Building2 className="h-4 w-4 text-primary" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <p className="text-sm font-medium text-foreground">{opp.institution_name}</p>
+                  <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                    {institutionTypeLabels[opp.institution_type] || opp.institution_type}
+                  </Badge>
+                </div>
+                {opp.notes && <p className="text-xs text-muted-foreground mt-1">{opp.notes}</p>}
+                <div className="mt-2">
+                  <Select value={opp.stage} onValueChange={(v) => handleStageChange(opp.id, v as OpportunityStage)}>
+                    <SelectTrigger className="h-7 w-auto text-[11px] bg-transparent border-none p-0 gap-1.5 hover:bg-muted/50 rounded-md px-2">
+                      <Badge className={`${stageColors[opp.stage]} text-[10px] px-2 py-0`}>
+                        {stageLabels[opp.stage]}
+                      </Badge>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {allStages.map(s => (
+                        <SelectItem key={s} value={s}>
+                          <span className="flex items-center gap-2">
+                            <span className={`h-2 w-2 rounded-full ${stageColors[s].split(" ")[0]}`} />
+                            {stageLabels[s]}
+                          </span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => handleDelete(opp.id)}
+                className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive shrink-0"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ─── Main Component ─── */
 export function ActiveClientsTab() {
   const { data: clients, isLoading } = useClientContracts();
