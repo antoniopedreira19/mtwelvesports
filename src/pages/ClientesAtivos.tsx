@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import {
   Plus, Search, ChevronDown, ChevronRight, Check, CircleDollarSign,
   Users, TrendingUp, Clock, CheckCircle2, Loader2, FileText, AlertTriangle,
-  Calendar,
+  Calendar, Link2, UserCheck,
 } from "lucide-react";
 import { format, parseISO, isSameMonth, isBefore, startOfDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -30,6 +30,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useRealtimeRefresh } from "@/hooks/useRealtimeRefresh";
 import { Client, Installment, Commission } from "@/types";
 import { toast as sonnerToast } from "sonner";
+import { LinkUserDialog } from "@/components/modules/financial/LinkUserDialog";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 type InstallmentWithFee = Omit<Installment, "id" | "contract_id"> & { transaction_fee?: number; dueDay?: number };
 
