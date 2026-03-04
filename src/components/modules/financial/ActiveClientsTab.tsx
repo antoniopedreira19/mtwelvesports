@@ -153,7 +153,7 @@ function ClientCard({
   client: ClientContractData;
   payerData: PayerData | undefined;
 }) {
-  const [open, setOpen] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState(false);
   const [linkDialogOpen, setLinkDialogOpen] = useState(false);
   const queryClient = useQueryClient();
