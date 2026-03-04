@@ -297,6 +297,50 @@ export type Database = {
           },
         ]
       }
+      opportunities: {
+        Row: {
+          client_id: string
+          created_at: string
+          id: string
+          institution_name: string
+          institution_type: string
+          notes: string | null
+          stage: Database["public"]["Enums"]["opportunity_stage"]
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          id?: string
+          institution_name: string
+          institution_type?: string
+          notes?: string | null
+          stage?: Database["public"]["Enums"]["opportunity_stage"]
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          id?: string
+          institution_name?: string
+          institution_type?: string
+          notes?: string | null
+          stage?: Database["public"]["Enums"]["opportunity_stage"]
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "opportunities_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string | null
@@ -379,6 +423,13 @@ export type Database = {
       app_role: "admin" | "member" | "client"
       contract_status: "draft" | "active" | "completed" | "cancelled"
       expense_category: "fixo" | "variavel" | "extra" | "imposto" | "comissao"
+      opportunity_stage:
+        | "prospecting"
+        | "in_conversation"
+        | "visiting"
+        | "offer"
+        | "committed"
+        | "rejected"
       pipeline_stage:
         | "radar"
         | "next_step"
@@ -518,6 +569,14 @@ export const Constants = {
       app_role: ["admin", "member", "client"],
       contract_status: ["draft", "active", "completed", "cancelled"],
       expense_category: ["fixo", "variavel", "extra", "imposto", "comissao"],
+      opportunity_stage: [
+        "prospecting",
+        "in_conversation",
+        "visiting",
+        "offer",
+        "committed",
+        "rejected",
+      ],
       pipeline_stage: [
         "radar",
         "next_step",
