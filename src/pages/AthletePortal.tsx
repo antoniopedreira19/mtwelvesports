@@ -24,10 +24,7 @@ import {
 } from "lucide-react";
 
 function getGreeting() {
-  const h = new Date().getHours();
-  if (h < 12) return "Bom dia";
-  if (h < 18) return "Boa tarde";
-  return "Boa noite";
+  return "Bem-vindo";
 }
 
 function getInitials(name: string | null | undefined, email: string | null | undefined) {
