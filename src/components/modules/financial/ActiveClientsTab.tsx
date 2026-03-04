@@ -12,6 +12,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
+import { LinkUserDialog } from "./LinkUserDialog";
 import {
   ChevronDown,
   User,
@@ -32,7 +33,8 @@ import {
   AlertCircle,
   Users,
   Calendar,
-  ExternalLink,
+  Link2,
+  UserCheck,
 } from "lucide-react";
 
 interface PayerData {
