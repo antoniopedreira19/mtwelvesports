@@ -9,10 +9,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import { LinkUserDialog } from "./LinkUserDialog";
+import { useOpportunities, stageLabels, stageColors, institutionTypeLabels, type OpportunityStage } from "@/hooks/useOpportunities";
 import {
   ChevronDown,
   User,
@@ -35,6 +37,10 @@ import {
   Calendar,
   Link2,
   UserCheck,
+  Plus,
+  Trash2,
+  Building2,
+  MapPin,
 } from "lucide-react";
 
 interface PayerData {
