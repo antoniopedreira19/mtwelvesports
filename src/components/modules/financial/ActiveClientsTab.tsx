@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
@@ -153,7 +153,7 @@ function ClientCard({
   client: ClientContractData;
   payerData: PayerData | undefined;
 }) {
-  const [open, setOpen] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState(false);
   const [linkDialogOpen, setLinkDialogOpen] = useState(false);
   const queryClient = useQueryClient();
@@ -216,382 +216,326 @@ function ClientCard({
   const hasPayerInfo = payerData?.payer_name || payerData?.payer_email || payerData?.payer_phone;
 
   return (
-    <Card className="rounded-2xl border-border/30 bg-card/80 backdrop-blur-sm overflow-hidden transition-all duration-300 hover:border-border/60 group">
-      <Collapsible open={open} onOpenChange={setOpen}>
-        <CollapsibleTrigger asChild>
-          <button className="w-full p-5 flex items-center gap-4 text-left transition-colors">
-            {/* Avatar */}
-            <div className="relative">
-              <Avatar className="h-12 w-12 ring-2 ring-border/50 group-hover:ring-primary/30 transition-all">
+    <>
+      <Card
+        className="rounded-2xl border-border/30 bg-card/80 backdrop-blur-sm overflow-hidden transition-all duration-300 hover:border-border/60 group cursor-pointer"
+        onClick={() => setModalOpen(true)}
+      >
+        <div className="w-full p-5 flex items-center gap-4 text-left">
+          {/* Avatar */}
+          <div className="relative">
+            <Avatar className="h-12 w-12 ring-2 ring-border/50 group-hover:ring-primary/30 transition-all">
+              <AvatarImage src={client.avatarUrl || undefined} />
+              <AvatarFallback className="bg-primary/15 text-primary font-bold text-sm">
+                {initials}
+              </AvatarFallback>
+            </Avatar>
+            {overdueCount > 0 && (
+              <div className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-destructive flex items-center justify-center">
+                <span className="text-[10px] font-bold text-destructive-foreground">{overdueCount}</span>
+              </div>
+            )}
+          </div>
+
+          {/* Info */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <h3 className="font-semibold text-foreground text-base">{client.clientName}</h3>
+              {client.hasActive && (
+                <Badge className="bg-emerald-500/15 text-emerald-400 border-emerald-500/25 text-[11px] px-2 py-0">
+                  Ativo
+                </Badge>
+              )}
+              {client.hasCompleted && !client.hasActive && (
+                <Badge variant="secondary" className="text-[11px] px-2 py-0">
+                  Concluído
+                </Badge>
+              )}
+              {overdueCount > 0 && (
+                <Badge className="bg-destructive/15 text-destructive border-destructive/25 text-[11px] px-2 py-0">
+                  <AlertCircle className="h-3 w-3 mr-1" />
+                  {overdueCount} em atraso
+                </Badge>
+              )}
+            </div>
+            <div className="flex items-center gap-3 mt-1">
+              {client.school && (
+                <span className="text-xs text-muted-foreground flex items-center gap-1">
+                  <GraduationCap className="h-3 w-3" />
+                  {client.school}
+                </span>
+              )}
+              {payerData?.payment_method && (
+                <span className="text-xs text-muted-foreground flex items-center gap-1">
+                  <CreditCard className="h-3 w-3" />
+                  {paymentMethodLabels[payerData.payment_method]}
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Progress + Value */}
+          <div className="hidden md:flex items-center gap-5">
+            <div className="w-32">
+              <div className="flex items-center justify-between text-xs mb-1.5">
+                <span className="text-muted-foreground">{Math.round(paymentProgress)}%</span>
+                <span className="text-foreground font-medium">{formatCurrency(client.totalPaid)}</span>
+              </div>
+              <Progress value={paymentProgress} className="h-1.5 bg-muted/50" />
+            </div>
+            <div className="text-right min-w-[100px]">
+              <p className="text-base font-bold text-foreground">{formatCurrency(client.totalValue)}</p>
+              <p className="text-[11px] text-muted-foreground">Valor total</p>
+            </div>
+          </div>
+        </div>
+      </Card>
+
+      {/* Modal */}
+      <Dialog open={modalOpen} onOpenChange={setModalOpen}>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-3">
+              <Avatar className="h-10 w-10 ring-2 ring-border/50">
                 <AvatarImage src={client.avatarUrl || undefined} />
                 <AvatarFallback className="bg-primary/15 text-primary font-bold text-sm">
                   {initials}
                 </AvatarFallback>
               </Avatar>
-              {overdueCount > 0 && (
-                <div className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-destructive flex items-center justify-center">
-                  <span className="text-[10px] font-bold text-destructive-foreground">{overdueCount}</span>
-                </div>
-              )}
-            </div>
-
-            {/* Info */}
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2.5 flex-wrap">
-                <h3 className="font-semibold text-foreground text-base">{client.clientName}</h3>
-                {client.hasActive && (
-                  <Badge className="bg-emerald-500/15 text-emerald-400 border-emerald-500/25 text-[11px] px-2 py-0">
-                    Ativo
-                  </Badge>
-                )}
-                {client.hasCompleted && !client.hasActive && (
-                  <Badge variant="secondary" className="text-[11px] px-2 py-0">
-                    Concluído
-                  </Badge>
-                )}
-                {overdueCount > 0 && (
-                  <Badge className="bg-destructive/15 text-destructive border-destructive/25 text-[11px] px-2 py-0">
-                    <AlertCircle className="h-3 w-3 mr-1" />
-                    {overdueCount} em atraso
-                  </Badge>
-                )}
-              </div>
-              <div className="flex items-center gap-3 mt-1">
+              <div>
+                <span className="text-lg">{client.clientName}</span>
                 {client.school && (
-                  <span className="text-xs text-muted-foreground flex items-center gap-1">
+                  <p className="text-xs text-muted-foreground font-normal flex items-center gap-1 mt-0.5">
                     <GraduationCap className="h-3 w-3" />
                     {client.school}
-                  </span>
+                  </p>
                 )}
-                {payerData?.payment_method && (
-                  <span className="text-xs text-muted-foreground flex items-center gap-1">
-                    <CreditCard className="h-3 w-3" />
-                    {paymentMethodLabels[payerData.payment_method]}
-                  </span>
-                )}
+              </div>
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-5 mt-2">
+            {/* Mobile values */}
+            <div className="md:hidden">
+              <div className="flex items-center justify-between text-xs mb-1.5">
+                <span className="text-muted-foreground">{Math.round(paymentProgress)}% pago</span>
+                <span className="text-foreground font-medium">{formatCurrency(client.totalValue)}</span>
+              </div>
+              <Progress value={paymentProgress} className="h-1.5 bg-muted/50" />
+            </div>
+
+            {/* Financial Grid */}
+            <div className="grid grid-cols-3 gap-3">
+              <div className="rounded-xl bg-emerald-500/8 border border-emerald-500/15 p-3">
+                <div className="flex items-center gap-2 mb-1">
+                  <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+                  <span className="text-[11px] text-emerald-400/80 uppercase tracking-wider font-medium">Recebido</span>
+                </div>
+                <p className="text-lg font-bold text-emerald-400">{formatCurrency(client.totalPaid)}</p>
+              </div>
+              <div className="rounded-xl bg-amber-500/8 border border-amber-500/15 p-3">
+                <div className="flex items-center gap-2 mb-1">
+                  <Clock className="h-3.5 w-3.5 text-amber-500" />
+                  <span className="text-[11px] text-amber-400/80 uppercase tracking-wider font-medium">Pendente</span>
+                </div>
+                <p className="text-lg font-bold text-amber-400">{formatCurrency(client.totalPending)}</p>
+              </div>
+              <div className="rounded-xl bg-muted/30 border border-border/30 p-3">
+                <div className="flex items-center gap-2 mb-1">
+                  <FileText className="h-3.5 w-3.5 text-muted-foreground" />
+                  <span className="text-[11px] text-muted-foreground uppercase tracking-wider font-medium">Contratos</span>
+                </div>
+                <p className="text-lg font-bold text-foreground">{client.contracts.length}</p>
               </div>
             </div>
 
-            {/* Progress + Value */}
-            <div className="hidden md:flex items-center gap-5">
-              <div className="w-32">
-                <div className="flex items-center justify-between text-xs mb-1.5">
-                  <span className="text-muted-foreground">{Math.round(paymentProgress)}%</span>
-                  <span className="text-foreground font-medium">{formatCurrency(client.totalPaid)}</span>
-                </div>
-                <Progress value={paymentProgress} className="h-1.5 bg-muted/50" />
-              </div>
-              <div className="text-right min-w-[100px]">
-                <p className="text-base font-bold text-foreground">{formatCurrency(client.totalValue)}</p>
-                <p className="text-[11px] text-muted-foreground">Valor total</p>
-              </div>
-            </div>
-
-            <ChevronDown
-              className={`h-4 w-4 text-muted-foreground transition-transform duration-300 ${open ? "rotate-180" : ""}`}
-            />
-          </button>
-        </CollapsibleTrigger>
-
-        <CollapsibleContent>
-          <div className="border-t border-border/20">
-            <CardContent className="p-5 space-y-5">
-              {/* Mobile values */}
-              <div className="md:hidden">
-                <div className="flex items-center justify-between text-xs mb-1.5">
-                  <span className="text-muted-foreground">{Math.round(paymentProgress)}% pago</span>
-                  <span className="text-foreground font-medium">{formatCurrency(client.totalValue)}</span>
-                </div>
-                <Progress value={paymentProgress} className="h-1.5 bg-muted/50" />
-              </div>
-
-              {/* Financial Grid */}
-              <div className="grid grid-cols-3 gap-3">
-                <div className="rounded-xl bg-emerald-500/8 border border-emerald-500/15 p-3">
-                  <div className="flex items-center gap-2 mb-1">
-                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
-                    <span className="text-[11px] text-emerald-400/80 uppercase tracking-wider font-medium">Recebido</span>
-                  </div>
-                  <p className="text-lg font-bold text-emerald-400">{formatCurrency(client.totalPaid)}</p>
-                </div>
-                <div className="rounded-xl bg-amber-500/8 border border-amber-500/15 p-3">
-                  <div className="flex items-center gap-2 mb-1">
-                    <Clock className="h-3.5 w-3.5 text-amber-500" />
-                    <span className="text-[11px] text-amber-400/80 uppercase tracking-wider font-medium">Pendente</span>
-                  </div>
-                  <p className="text-lg font-bold text-amber-400">{formatCurrency(client.totalPending)}</p>
-                </div>
-                <div className="rounded-xl bg-muted/30 border border-border/30 p-3">
-                  <div className="flex items-center gap-2 mb-1">
-                    <FileText className="h-3.5 w-3.5 text-muted-foreground" />
-                    <span className="text-[11px] text-muted-foreground uppercase tracking-wider font-medium">Contratos</span>
-                  </div>
-                  <p className="text-lg font-bold text-foreground">{client.contracts.length}</p>
-                </div>
-              </div>
-
-              {/* Payer Data */}
-              <div className="rounded-xl bg-muted/20 border border-border/30 overflow-hidden">
-                <div className="flex items-center justify-between px-4 py-3 border-b border-border/20">
-                  <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                    <User className="h-4 w-4 text-primary" />
-                    Dados do Pagador
-                  </h4>
-                  {!editing ? (
-                    <Button variant="ghost" size="sm" onClick={startEdit} className="h-7 text-xs gap-1.5 text-muted-foreground hover:text-foreground">
-                      <Pencil className="h-3 w-3" /> Editar
+            {/* Payer Data */}
+            <div className="rounded-xl bg-muted/20 border border-border/30 overflow-hidden">
+              <div className="flex items-center justify-between px-4 py-3 border-b border-border/20">
+                <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                  <User className="h-4 w-4 text-primary" />
+                  Dados do Pagador
+                </h4>
+                {!editing ? (
+                  <Button variant="ghost" size="sm" onClick={startEdit} className="h-7 text-xs gap-1.5 text-muted-foreground hover:text-foreground">
+                    <Pencil className="h-3 w-3" /> Editar
+                  </Button>
+                ) : (
+                  <div className="flex gap-1">
+                    <Button variant="ghost" size="sm" onClick={() => saveMutation.mutate(form)} disabled={saveMutation.isPending} className="h-7 text-xs gap-1 text-emerald-500 hover:text-emerald-400">
+                      <Check className="h-3 w-3" /> Salvar
                     </Button>
-                  ) : (
-                    <div className="flex gap-1">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => saveMutation.mutate(form)}
-                        disabled={saveMutation.isPending}
-                        className="h-7 text-xs gap-1 text-emerald-500 hover:text-emerald-400"
-                      >
-                        <Check className="h-3 w-3" /> Salvar
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setEditing(false)}
-                        className="h-7 text-xs gap-1 text-muted-foreground"
-                      >
-                        <X className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  )}
-                </div>
-
-                <div className="p-4">
-                  {editing ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                      <div className="space-y-1.5">
-                        <label className="text-[11px] text-muted-foreground uppercase tracking-wider">Nome do Pagador</label>
-                        <Input
-                          value={form.payer_name}
-                          onChange={(e) => setForm({ ...form, payer_name: e.target.value })}
-                          placeholder="Nome completo"
-                          className="h-9 text-sm bg-background/50"
-                        />
-                      </div>
-                      <div className="space-y-1.5">
-                        <label className="text-[11px] text-muted-foreground uppercase tracking-wider">Email</label>
-                        <Input
-                          value={form.payer_email}
-                          onChange={(e) => setForm({ ...form, payer_email: e.target.value })}
-                          placeholder="email@exemplo.com"
-                          className="h-9 text-sm bg-background/50"
-                        />
-                      </div>
-                      <div className="space-y-1.5">
-                        <label className="text-[11px] text-muted-foreground uppercase tracking-wider">Telefone</label>
-                        <Input
-                          value={form.payer_phone}
-                          onChange={(e) => setForm({ ...form, payer_phone: e.target.value })}
-                          placeholder="(00) 00000-0000"
-                          className="h-9 text-sm bg-background/50"
-                        />
-                      </div>
-                      <div className="space-y-1.5">
-                        <label className="text-[11px] text-muted-foreground uppercase tracking-wider">Quem paga?</label>
-                        <Select
-                          value={form.payer_relationship}
-                          onValueChange={(v) => setForm({ ...form, payer_relationship: v })}
-                        >
-                          <SelectTrigger className="h-9 text-sm bg-background/50">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="self">Ele mesmo</SelectItem>
-                            <SelectItem value="parent">Pai/Mãe</SelectItem>
-                            <SelectItem value="guardian">Responsável</SelectItem>
-                            <SelectItem value="other">Outro</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="space-y-1.5">
-                        <label className="text-[11px] text-muted-foreground uppercase tracking-wider">Método de Pagamento</label>
-                        <Select
-                          value={form.payment_method}
-                          onValueChange={(v) => setForm({ ...form, payment_method: v })}
-                        >
-                          <SelectTrigger className="h-9 text-sm bg-background/50">
-                            <SelectValue placeholder="Selecionar..." />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="pix">PIX</SelectItem>
-                            <SelectItem value="transfer">Transferência</SelectItem>
-                            <SelectItem value="credit_card">Cartão de Crédito</SelectItem>
-                            <SelectItem value="boleto">Boleto</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                  ) : hasPayerInfo ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                      <div className="flex items-center gap-2.5">
-                        <div className="h-8 w-8 rounded-lg bg-muted/50 flex items-center justify-center shrink-0">
-                          <User className="h-3.5 w-3.5 text-muted-foreground" />
-                        </div>
-                        <div>
-                          <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Pagador</p>
-                          <p className="text-sm text-foreground">{payerData?.payer_name || "—"}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2.5">
-                        <div className="h-8 w-8 rounded-lg bg-muted/50 flex items-center justify-center shrink-0">
-                          <Mail className="h-3.5 w-3.5 text-muted-foreground" />
-                        </div>
-                        <div>
-                          <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Email</p>
-                          <p className="text-sm text-foreground">{payerData?.payer_email || "—"}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2.5">
-                        <div className="h-8 w-8 rounded-lg bg-muted/50 flex items-center justify-center shrink-0">
-                          <Phone className="h-3.5 w-3.5 text-muted-foreground" />
-                        </div>
-                        <div>
-                          <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Telefone</p>
-                          <p className="text-sm text-foreground">{payerData?.payer_phone || "—"}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2.5">
-                        <div className="h-8 w-8 rounded-lg bg-muted/50 flex items-center justify-center shrink-0">
-                          <User className="h-3.5 w-3.5 text-muted-foreground" />
-                        </div>
-                        <div>
-                          <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Relação</p>
-                          <p className="text-sm text-foreground">{relationshipLabels[payerData?.payer_relationship || "self"]}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2.5">
-                        <div className="h-8 w-8 rounded-lg bg-muted/50 flex items-center justify-center shrink-0">
-                          <CreditCard className="h-3.5 w-3.5 text-muted-foreground" />
-                        </div>
-                        <div>
-                          <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Pagamento</p>
-                          <p className="text-sm text-foreground">
-                            {payerData?.payment_method
-                              ? paymentMethodLabels[payerData.payment_method]
-                              : "—"}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="text-center py-4">
-                      <p className="text-sm text-muted-foreground mb-2">Nenhum dado de pagador cadastrado</p>
-                      <Button variant="outline" size="sm" onClick={startEdit} className="text-xs gap-1.5">
-                        <Pencil className="h-3 w-3" /> Cadastrar Pagador
-                      </Button>
-                    </div>
-                  )}
-                </div>
+                    <Button variant="ghost" size="sm" onClick={() => setEditing(false)} className="h-7 text-xs gap-1 text-muted-foreground">
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </div>
+                )}
               </div>
 
-              {/* Contracts */}
-              {client.contracts.length > 0 && (
-                <div className="rounded-xl bg-muted/20 border border-border/30 overflow-hidden">
-                  <div className="px-4 py-3 border-b border-border/20">
-                    <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                      <FileText className="h-4 w-4 text-primary" />
-                      Contratos
-                    </h4>
+              <div className="p-4">
+                {editing ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] text-muted-foreground uppercase tracking-wider">Nome do Pagador</label>
+                      <Input value={form.payer_name} onChange={(e) => setForm({ ...form, payer_name: e.target.value })} placeholder="Nome completo" className="h-9 text-sm bg-background/50" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] text-muted-foreground uppercase tracking-wider">Email</label>
+                      <Input value={form.payer_email} onChange={(e) => setForm({ ...form, payer_email: e.target.value })} placeholder="email@exemplo.com" className="h-9 text-sm bg-background/50" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] text-muted-foreground uppercase tracking-wider">Telefone</label>
+                      <Input value={form.payer_phone} onChange={(e) => setForm({ ...form, payer_phone: e.target.value })} placeholder="(00) 00000-0000" className="h-9 text-sm bg-background/50" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] text-muted-foreground uppercase tracking-wider">Quem paga?</label>
+                      <Select value={form.payer_relationship} onValueChange={(v) => setForm({ ...form, payer_relationship: v })}>
+                        <SelectTrigger className="h-9 text-sm bg-background/50"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="self">Ele mesmo</SelectItem>
+                          <SelectItem value="parent">Pai/Mãe</SelectItem>
+                          <SelectItem value="guardian">Responsável</SelectItem>
+                          <SelectItem value="other">Outro</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] text-muted-foreground uppercase tracking-wider">Método de Pagamento</label>
+                      <Select value={form.payment_method} onValueChange={(v) => setForm({ ...form, payment_method: v })}>
+                        <SelectTrigger className="h-9 text-sm bg-background/50"><SelectValue placeholder="Selecionar..." /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="pix">PIX</SelectItem>
+                          <SelectItem value="transfer">Transferência</SelectItem>
+                          <SelectItem value="credit_card">Cartão de Crédito</SelectItem>
+                          <SelectItem value="boleto">Boleto</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
-                  <div className="divide-y divide-border/15">
-                    {client.contracts.map((contract) => {
-                      const paid = contract.installments.filter((i) => i.status === "paid").length;
-                      const total = contract.installments.length;
-                      const progress = total > 0 ? (paid / total) * 100 : 0;
-                      return (
-                        <div key={contract.id} className="px-4 py-3 flex items-center gap-4">
-                          <Badge
-                            className={
-                              contract.status === "active"
-                                ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/25 text-[11px]"
-                                : "bg-muted text-muted-foreground border-border/30 text-[11px]"
-                            }
-                          >
-                            {contract.status === "active" ? "Ativo" : "Concluído"}
-                          </Badge>
-                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                            <Calendar className="h-3 w-3" />
-                            Dia {contract.dueDay}
-                          </div>
-                          <div className="flex-1 hidden sm:block">
-                            <div className="flex items-center gap-2">
-                              <Progress value={progress} className="h-1 flex-1 bg-muted/50" />
-                              <span className="text-[11px] text-muted-foreground whitespace-nowrap">
-                                {paid}/{total}
-                              </span>
-                            </div>
-                          </div>
-                          <span className="font-semibold text-sm text-foreground">
-                            {formatCurrency(contract.totalValue)}
-                          </span>
+                ) : hasPayerInfo ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {[
+                      { icon: User, label: "Pagador", value: payerData?.payer_name },
+                      { icon: Mail, label: "Email", value: payerData?.payer_email },
+                      { icon: Phone, label: "Telefone", value: payerData?.payer_phone },
+                      { icon: User, label: "Relação", value: relationshipLabels[payerData?.payer_relationship || "self"] },
+                      { icon: CreditCard, label: "Pagamento", value: payerData?.payment_method ? paymentMethodLabels[payerData.payment_method] : null },
+                    ].map((item, i) => (
+                      <div key={i} className="flex items-center gap-2.5">
+                        <div className="h-8 w-8 rounded-lg bg-muted/50 flex items-center justify-center shrink-0">
+                          <item.icon className="h-3.5 w-3.5 text-muted-foreground" />
                         </div>
-                      );
-                    })}
+                        <div>
+                          <p className="text-[10px] text-muted-foreground uppercase tracking-wider">{item.label}</p>
+                          <p className="text-sm text-foreground">{item.value || "—"}</p>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                </div>
-              )}
+                ) : (
+                  <div className="text-center py-4">
+                    <p className="text-sm text-muted-foreground mb-2">Nenhum dado de pagador cadastrado</p>
+                    <Button variant="outline" size="sm" onClick={startEdit} className="text-xs gap-1.5">
+                      <Pencil className="h-3 w-3" /> Cadastrar Pagador
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </div>
 
-              {/* Link User to Portal */}
-              <div
-                onClick={() => setLinkDialogOpen(true)}
-                className={`rounded-xl border p-5 flex items-center gap-4 cursor-pointer transition-all duration-300 ${
-                  client.userId
-                    ? "border-emerald-500/20 bg-emerald-500/5 hover:border-emerald-500/30"
-                    : "border-dashed border-border/30 bg-muted/10 hover:border-primary/30 hover:bg-primary/5"
+            {/* Contracts */}
+            {client.contracts.length > 0 && (
+              <div className="rounded-xl bg-muted/20 border border-border/30 overflow-hidden">
+                <div className="px-4 py-3 border-b border-border/20">
+                  <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                    <FileText className="h-4 w-4 text-primary" />
+                    Contratos
+                  </h4>
+                </div>
+                <div className="divide-y divide-border/15">
+                  {client.contracts.map((contract) => {
+                    const paid = contract.installments.filter((i) => i.status === "paid").length;
+                    const total = contract.installments.length;
+                    const progress = total > 0 ? (paid / total) * 100 : 0;
+                    return (
+                      <div key={contract.id} className="px-4 py-3 flex items-center gap-4">
+                        <Badge
+                          className={
+                            contract.status === "active"
+                              ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/25 text-[11px]"
+                              : "bg-muted text-muted-foreground border-border/30 text-[11px]"
+                          }
+                        >
+                          {contract.status === "active" ? "Ativo" : "Concluído"}
+                        </Badge>
+                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                          <Calendar className="h-3 w-3" />
+                          Dia {contract.dueDay}
+                        </div>
+                        <div className="flex-1 hidden sm:block">
+                          <div className="flex items-center gap-2">
+                            <Progress value={progress} className="h-1 flex-1 bg-muted/50" />
+                            <span className="text-[11px] text-muted-foreground whitespace-nowrap">{paid}/{total}</span>
+                          </div>
+                        </div>
+                        <span className="font-semibold text-sm text-foreground">{formatCurrency(contract.totalValue)}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Link User to Portal */}
+            <div
+              onClick={() => setLinkDialogOpen(true)}
+              className={`rounded-xl border p-5 flex items-center gap-4 cursor-pointer transition-all duration-300 ${
+                client.userId
+                  ? "border-emerald-500/20 bg-emerald-500/5 hover:border-emerald-500/30"
+                  : "border-dashed border-border/30 bg-muted/10 hover:border-primary/30 hover:bg-primary/5"
+              }`}
+            >
+              <div className={`h-10 w-10 rounded-xl flex items-center justify-center shrink-0 ${
+                client.userId ? "bg-emerald-500/15" : "bg-primary/10"
+              }`}>
+                {client.userId ? (
+                  <UserCheck className="h-5 w-5 text-emerald-400" />
+                ) : (
+                  <Link2 className="h-5 w-5 text-primary" />
+                )}
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-medium text-foreground">
+                  {client.userId ? "Conta vinculada ao Portal" : "Vincular ao Portal do Atleta"}
+                </p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {client.userId
+                    ? "Clique para gerenciar o vínculo com o login do sistema"
+                    : "Associe um login para que o atleta acesse o portal"}
+                </p>
+              </div>
+              <Badge
+                variant={client.userId ? "default" : "secondary"}
+                className={`text-[10px] shrink-0 ${
+                  client.userId ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/25" : ""
                 }`}
               >
-                <div className={`h-10 w-10 rounded-xl flex items-center justify-center shrink-0 ${
-                  client.userId ? "bg-emerald-500/15" : "bg-primary/10"
-                }`}>
-                  {client.userId ? (
-                    <UserCheck className="h-5 w-5 text-emerald-400" />
-                  ) : (
-                    <Link2 className="h-5 w-5 text-primary" />
-                  )}
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-foreground">
-                    {client.userId ? "Conta vinculada ao Portal" : "Vincular ao Portal do Atleta"}
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    {client.userId
-                      ? "Clique para gerenciar o vínculo com o login do sistema"
-                      : "Associe um login para que o atleta acesse o portal"}
-                  </p>
-                </div>
-                <Badge
-                  variant={client.userId ? "default" : "secondary"}
-                  className={`text-[10px] shrink-0 ${
-                    client.userId
-                      ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/25"
-                      : ""
-                  }`}
-                >
-                  {client.userId ? "Vinculado" : "Vincular"}
-                </Badge>
-              </div>
+                {client.userId ? "Vinculado" : "Vincular"}
+              </Badge>
+            </div>
 
-              <LinkUserDialog
-                open={linkDialogOpen}
-                onOpenChange={setLinkDialogOpen}
-                clientId={client.clientId}
-                clientName={client.clientName}
-                currentUserId={client.userId}
-                onLinked={() => queryClient.invalidateQueries({ queryKey: ["client-contracts"] })}
-              />
-            </CardContent>
+            <LinkUserDialog
+              open={linkDialogOpen}
+              onOpenChange={setLinkDialogOpen}
+              clientId={client.clientId}
+              clientName={client.clientName}
+              currentUserId={client.userId}
+              onLinked={() => queryClient.invalidateQueries({ queryKey: ["client-contracts"] })}
+            />
           </div>
-        </CollapsibleContent>
-      </Collapsible>
-    </Card>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 
