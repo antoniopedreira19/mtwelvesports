@@ -461,33 +461,7 @@ export default function ClientesAtivos() {
               {client.hasActive && <Badge variant="outline" className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20 text-[10px] px-1.5 py-0">Ativo</Badge>}
               {client.hasCompleted && !client.hasActive && <Badge variant="outline" className="bg-blue-500/10 text-blue-500 border-blue-500/20 text-[10px] px-1.5 py-0">Concluído</Badge>}
             </div>
-            <div className="flex items-center gap-2">
-              {client.school && <span className="text-xs text-muted-foreground">{client.school}</span>}
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setLinkClientId(client.clientId);
-                      setLinkClientName(client.clientName);
-                      setLinkCurrentUserId(client.userId);
-                      setLinkDialogOpen(true);
-                    }}
-                    className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-medium transition-colors ${
-                      client.userId
-                        ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20"
-                        : "bg-white/5 text-muted-foreground border border-border/50 hover:bg-white/10 hover:text-foreground"
-                    }`}
-                  >
-                    {client.userId ? <UserCheck className="h-3 w-3" /> : <Link2 className="h-3 w-3" />}
-                    {client.userId ? "Vinculado" : "Vincular"}
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  {client.userId ? "Usuário vinculado ao login" : "Vincular a um login do sistema"}
-                </TooltipContent>
-              </Tooltip>
-            </div>
+            {client.school && <span className="text-xs text-muted-foreground">{client.school}</span>}
           </div>
           <div className="hidden md:flex items-center gap-6 shrink-0">
             <div className="text-right">
