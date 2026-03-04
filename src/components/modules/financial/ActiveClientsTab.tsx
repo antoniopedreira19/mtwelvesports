@@ -539,19 +539,54 @@ function ClientCard({
                 </div>
               )}
 
-              {/* Portal placeholder */}
-              <div className="rounded-xl border border-dashed border-border/30 bg-muted/10 p-5 flex items-center gap-4">
-                <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                  <ExternalLink className="h-5 w-5 text-primary" />
+              {/* Link User to Portal */}
+              <div
+                onClick={() => setLinkDialogOpen(true)}
+                className={`rounded-xl border p-5 flex items-center gap-4 cursor-pointer transition-all duration-300 ${
+                  client.userId
+                    ? "border-emerald-500/20 bg-emerald-500/5 hover:border-emerald-500/30"
+                    : "border-dashed border-border/30 bg-muted/10 hover:border-primary/30 hover:bg-primary/5"
+                }`}
+              >
+                <div className={`h-10 w-10 rounded-xl flex items-center justify-center shrink-0 ${
+                  client.userId ? "bg-emerald-500/15" : "bg-primary/10"
+                }`}>
+                  {client.userId ? (
+                    <UserCheck className="h-5 w-5 text-emerald-400" />
+                  ) : (
+                    <Link2 className="h-5 w-5 text-primary" />
+                  )}
                 </div>
                 <div className="flex-1">
-                  <p className="text-sm font-medium text-foreground">Portal do Cliente</p>
+                  <p className="text-sm font-medium text-foreground">
+                    {client.userId ? "Conta vinculada ao Portal" : "Vincular ao Portal do Atleta"}
+                  </p>
                   <p className="text-xs text-muted-foreground mt-0.5">
-                    Em breve: documentos, oportunidades de times/universidades e comunicação direta
+                    {client.userId
+                      ? "Clique para gerenciar o vínculo com o login do sistema"
+                      : "Associe um login para que o atleta acesse o portal"}
                   </p>
                 </div>
-                <Badge variant="secondary" className="text-[10px] shrink-0">Em breve</Badge>
+                <Badge
+                  variant={client.userId ? "default" : "secondary"}
+                  className={`text-[10px] shrink-0 ${
+                    client.userId
+                      ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/25"
+                      : ""
+                  }`}
+                >
+                  {client.userId ? "Vinculado" : "Vincular"}
+                </Badge>
               </div>
+
+              <LinkUserDialog
+                open={linkDialogOpen}
+                onOpenChange={setLinkDialogOpen}
+                clientId={client.clientId}
+                clientName={client.clientName}
+                currentUserId={client.userId}
+                onLinked={() => queryClient.invalidateQueries({ queryKey: ["client-contracts"] })}
+              />
             </CardContent>
           </div>
         </CollapsibleContent>
