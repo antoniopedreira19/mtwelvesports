@@ -63,11 +63,6 @@ export default function ClientesAtivos() {
   } | null>(null);
   const [paymentClientName, setPaymentClientName] = useState("");
 
-  // Link user dialog state
-  const [linkDialogOpen, setLinkDialogOpen] = useState(false);
-  const [linkClientId, setLinkClientId] = useState("");
-  const [linkClientName, setLinkClientName] = useState("");
-  const [linkCurrentUserId, setLinkCurrentUserId] = useState<string | null>(null);
 
   const [isLoading, setIsLoading] = useState(false);
 
