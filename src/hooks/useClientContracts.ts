@@ -6,6 +6,7 @@ export interface ClientContractData {
   clientName: string;
   school: string | null;
   avatarUrl: string | null;
+  userId: string | null;
   contracts: {
     id: string;
     status: string;
