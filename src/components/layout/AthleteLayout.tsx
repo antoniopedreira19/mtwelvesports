@@ -13,10 +13,7 @@ export function AthleteLayout() {
     <div className="flex flex-col min-h-screen w-full bg-[#09090b]">
       {/* Header */}
       <header className="flex items-center justify-between h-16 px-6 border-b border-white/5 bg-black/80 backdrop-blur-md sticky top-0 z-20">
-        <div className="flex items-center gap-3">
-          <img src={LOGO_URL} alt="MTwelve" className="h-9 w-9 object-contain" />
-          <span className="font-bold text-lg tracking-tight text-[#E8BD27]">MTwelve</span>
-        </div>
+        <span className="font-bold text-lg tracking-tight text-[#E8BD27]">MTwelve</span>
 
         <button
           onClick={signOut}
