@@ -115,11 +115,20 @@ export function LinkUserDialog({
   const linkUser = async (userId: string) => {
     setLinking(true);
     try {
+      // Link client to user
       const { error } = await supabase
         .from("clients")
         .update({ user_id: userId })
         .eq("id", clientId);
       if (error) throw error;
+
+      // Update profile name to match client name
+      const { error: profileError } = await supabase
+        .from("profiles")
+        .update({ name: clientName })
+        .eq("id", userId);
+      if (profileError) console.error("Erro ao atualizar perfil:", profileError);
+
       toast.success("Usuário vinculado com sucesso!");
       onLinked();
       onOpenChange(false);
