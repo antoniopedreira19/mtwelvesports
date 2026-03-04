@@ -6,6 +6,7 @@ export interface ClientContractData {
   clientName: string;
   school: string | null;
   avatarUrl: string | null;
+  userId: string | null;
   contracts: {
     id: string;
     status: string;
@@ -43,7 +44,7 @@ export function useClientContracts() {
       // Fetch contracts with clients
       const { data: contracts, error: cErr } = await supabase
         .from("contracts")
-        .select("*, clients(id, name, school, avatar_url)")
+        .select("*, clients(id, name, school, avatar_url, user_id)")
         .in("status", ["active", "completed"])
         .order("created_at", { ascending: false });
 
@@ -78,6 +79,7 @@ export function useClientContracts() {
             clientName: client.name,
             school: client.school,
             avatarUrl: client.avatar_url,
+            userId: client.user_id || null,
             contracts: [],
             totalValue: 0,
             totalPaid: 0,

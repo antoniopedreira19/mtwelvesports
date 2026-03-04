@@ -40,6 +40,7 @@ export type Database = {
           school: string | null
           stage: Database["public"]["Enums"]["pipeline_stage"]
           updated_at: string
+          user_id: string | null
           value: number | null
         }
         Insert: {
@@ -67,6 +68,7 @@ export type Database = {
           school?: string | null
           stage?: Database["public"]["Enums"]["pipeline_stage"]
           updated_at?: string
+          user_id?: string | null
           value?: number | null
         }
         Update: {
@@ -94,6 +96,7 @@ export type Database = {
           school?: string | null
           stage?: Database["public"]["Enums"]["pipeline_stage"]
           updated_at?: string
+          user_id?: string | null
           value?: number | null
         }
         Relationships: []
