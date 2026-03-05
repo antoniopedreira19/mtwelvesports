@@ -19,6 +19,9 @@ import {
   Camera,
 } from "lucide-react";
 import { AthletePaymentsTab } from "@/components/modules/athlete/AthletePaymentsTab";
+import { useAthleteOpportunities } from "@/hooks/useAthleteOpportunities";
+import { stageLabels, stageColors, institutionTypeLabels } from "@/hooks/useOpportunities";
+import type { OpportunityStage } from "@/hooks/useOpportunities";
 
 type AthleteContext = {
   activeTab: string;
@@ -84,6 +87,7 @@ function DocumentCard({ doc }: { doc: typeof requiredDocuments[number] }) {
 export default function AthletePortal() {
   const { profile, isLoading } = useProfile();
   const { activeTab } = useOutletContext<AthleteContext>();
+  const { data: opportunities = [], isLoading: loadingOpportunities } = useAthleteOpportunities();
 
   const displayName = profile?.name || profile?.email?.split("@")[0] || "Atleta";
   const initials = getInitials(profile?.name, profile?.email);
@@ -168,8 +172,50 @@ export default function AthletePortal() {
       )}
 
       {activeTab === "placement" && (
-        <div className="animate-in fade-in duration-300">
-          <ComingSoonPlaceholder title="Placement Board" description="Em breve você poderá acompanhar as universidades interessadas no seu perfil e o status de cada oportunidade." />
+        <div className="animate-in fade-in duration-300 space-y-4">
+          {loadingOpportunities ? (
+            <div className="space-y-3">
+              {[1, 2, 3].map((i) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}
+            </div>
+          ) : opportunities.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-20 gap-4 text-center">
+              <div className="w-16 h-16 rounded-2xl bg-[#E8BD27]/10 flex items-center justify-center">
+                <Globe className="w-8 h-8 text-[#E8BD27]" />
+              </div>
+              <h2 className="text-xl font-bold text-white">Nenhuma oportunidade ainda</h2>
+              <p className="text-white/50 max-w-md">Quando a assessoria registrar oportunidades de universidades, escolas ou times, elas aparecerão aqui.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {opportunities.map((opp) => (
+                <Card key={opp.id} className="bg-[#141414] border-white/5 hover:border-[#E8BD27]/20 transition-all duration-300">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-start gap-3 min-w-0">
+                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#E8BD27]/20 to-[#E8BD27]/5 flex items-center justify-center shrink-0">
+                          <Trophy className="w-5 h-5 text-[#E8BD27]" />
+                        </div>
+                        <div className="min-w-0">
+                          <CardTitle className="text-base text-white truncate">{opp.institution_name}</CardTitle>
+                          <CardDescription className="text-white/40 text-sm">
+                            {institutionTypeLabels[opp.institution_type] || opp.institution_type}
+                          </CardDescription>
+                        </div>
+                      </div>
+                      <Badge className={`shrink-0 text-xs border ${stageColors[opp.stage as OpportunityStage]}`}>
+                        {stageLabels[opp.stage as OpportunityStage]}
+                      </Badge>
+                    </div>
+                  </CardHeader>
+                  {opp.notes && (
+                    <CardContent className="pt-0">
+                      <p className="text-white/40 text-sm">{opp.notes}</p>
+                    </CardContent>
+                  )}
+                </Card>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
