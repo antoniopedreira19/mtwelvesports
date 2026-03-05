@@ -19,6 +19,9 @@ import {
   Camera,
 } from "lucide-react";
 import { AthletePaymentsTab } from "@/components/modules/athlete/AthletePaymentsTab";
+import { useAthleteOpportunities } from "@/hooks/useAthleteOpportunities";
+import { stageLabels, stageColors, institutionTypeLabels } from "@/hooks/useOpportunities";
+import type { OpportunityStage } from "@/hooks/useOpportunities";
 
 type AthleteContext = {
   activeTab: string;
